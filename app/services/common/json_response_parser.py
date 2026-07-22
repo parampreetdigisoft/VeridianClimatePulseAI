@@ -156,7 +156,7 @@ def validate_question_response(data: Dict) -> Dict:
             "ai_score", "confidence_level", "evidence_summary",
             "four_layer_evidence", "temporal_scope", "distortion_screening",
             "relational_dependencies", "stress_simulation",
-            "inequality_adjustment", "opacity_risk",
+            "inclusion_equity_adjustment", "opacity_risk",
         ],
     )
     _validate_ai_score(data)
@@ -183,9 +183,9 @@ def validate_program_response(data: Dict) -> Dict:
         [
             "ai_score", "confidence_level", "executive_summary",
             "cross_pillar_patterns", "institutional_capacity",
-            "equity_assessment", "conflict_risk_outlook",
-            "strategic_recommendation", "data_transparency_note",
-            "stress_simulation", "inequality_adjustment", "opacity_risk",
+            "equity_assessment", "governance_trajectory",
+            "strategic_recommendation", "assessment_value_note",
+            "stress_simulation", "inclusion_equity_adjustment", "opacity_risk",
         ],
     )
     _validate_ai_score(data)
@@ -207,7 +207,7 @@ def map_question_response(
     stress = analysis.get("stress_simulation", {})
     return {
         "success": True,
-        "CountryID": None,
+        "ClimateProgramID": None,
         "PillarID": pillar_id,
         "Year": year,
         # Scores
@@ -225,12 +225,12 @@ def map_question_response(
         "DistortionScreening": analysis.get("distortion_screening"),
         "RelationalDependencies": analysis.get("relational_dependencies"),
         # Stress simulation
-        "StressPoliticalShock": stress.get("political_shock"),
-        "StressEconomicShock": stress.get("economic_shock"),
-        "StressNarrativeShock": stress.get("narrative_shock"),
+        "StressGeopoliticalShock": stress.get("geopolitical_shock"),
+        "StressFinanceShock": stress.get("finance_shock"),
+        "StressLegitimacyShock": stress.get("legitimacy_shock"),
         "StressOverallResilienceShock": stress.get("overall_stress_resilience"),
         # Adjustments & flags
-        "InequalityAdjustment": analysis.get("inequality_adjustment"),
+        "InclusionEquityAdjustment": analysis.get("inclusion_equity_adjustment"),
         "OpacityRisk": analysis.get("opacity_risk"),
         "NonCompensationNote": analysis.get("non_compensation_note"),
         "RedFlag": analysis.get("red_flag"),
@@ -256,7 +256,7 @@ def map_pillar_response(
     stress = analysis.get("stress_simulation", {})
     return {
         "success": True,
-        "CountryID": None,
+        "ClimateProgramID": None,
         "PillarID": pillar_id,
         "Year": year,
         # Scores
@@ -275,16 +275,16 @@ def map_pillar_response(
         "DistortionScreening": analysis.get("distortion_screening"),
         "RelationalIntegrity": analysis.get("relational_integrity"),
         # Stress simulation
-        "StressPoliticalShock": stress.get("political_shock"),
-        "StressEconomicShock": stress.get("economic_shock"),
-        "StressNarrativeShock": stress.get("narrative_shock"),
+        "StressGeopoliticalShock": stress.get("geopolitical_shock"),
+        "StressFinanceShock": stress.get("finance_shock"),
+        "StressLegitimacyShock": stress.get("legitimacy_shock"),
         "StressOverallResilience": stress.get("overall_stress_resilience"),
         "StressScoreAdjustment": stress.get("stress_score_adjustment"),
         # Adjustments & flags
-        "InequalityAdjustment": analysis.get("inequality_adjustment"),
+        "InclusionEquityAdjustment": analysis.get("inclusion_equity_adjustment"),
         "OpacityRisk": analysis.get("opacity_risk"),
         "NonCompensationNote": analysis.get("non_compensation_note"),
-        "GeographicEquityNote": analysis.get("geographic_equity_note"),
+        "InclusionAccessNote": analysis.get("inclusion_access_note"),
         "InstitutionalAssessment": analysis.get("institutional_assessment"),
         "DataGapAnalysis": analysis.get("data_gap_analysis"),
         "RedFlag": analysis.get("red_flag"),
@@ -302,7 +302,7 @@ def map_program_response(
     stress = analysis.get("stress_simulation", {})
     return {
         "success": True,
-        "CountryID": None,
+        "ClimateProgramID": None,
         "Year": year,
         # Scores
         "AIScore": analysis.get("ai_score"),
@@ -318,22 +318,22 @@ def map_program_response(
         "TemporalScope": analysis.get("temporal_scope"),
         "DistortionScreening": analysis.get("distortion_screening"),
         # Stress simulation
-        "PoliticalShock": stress.get("political_shock"),
-        "EconomicShock": stress.get("economic_shock"),
-        "NarrativeShock": stress.get("narrative_shock"),
+        "GeopoliticalShock": stress.get("geopolitical_shock"),
+        "FinanceShock": stress.get("finance_shock"),
+        "LegitimacyShock": stress.get("legitimacy_shock"),
         "OverallStressResilience": stress.get("overall_stress_resilience"),
         "StressScoreAdjustment": stress.get("stress_score_adjustment"),
         # Adjustments, patterns & flags
-        "InequalityAdjustment": analysis.get("inequality_adjustment"),
+        "InclusionEquityAdjustment": analysis.get("inclusion_equity_adjustment"),
         "OpacityRisk": analysis.get("opacity_risk"),
         "NonCompensationNote": analysis.get("non_compensation_note"),
         "CrossPillarPatterns": analysis.get("cross_pillar_patterns"),
         "RelationalIntegrity": analysis.get("relational_integrity"),
         "InstitutionalCapacity": analysis.get("institutional_capacity"),
         "EquityAssessment": analysis.get("equity_assessment"),
-        "ConflictRiskOutlook": analysis.get("conflict_risk_outlook"),
+        "GovernanceTrajectory": analysis.get("governance_trajectory"),
         "StrategicRecommendation": analysis.get("strategic_recommendation"),
-        "DataTransparencyNote": analysis.get("data_transparency_note"),
+        "AssessmentValueNote": analysis.get("assessment_value_note"),
         "PrimarySource": analysis.get("primary_source"),
     }
 def build_immediateSituation_record(ai: dict) -> Dict[str, Any]:

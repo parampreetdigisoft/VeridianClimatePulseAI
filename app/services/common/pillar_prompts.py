@@ -1,6 +1,6 @@
 """
 Data Analyzer Service - LLM-powered analysis of SQL Server data
-Enhanced with Veridian Climate Pulse Platform (VCPP) pillar prompts.
+Enhanced with Veridian Climate Pulse (VCP) pillar prompts.
 Pillars are loaded dynamically from the database — not hardcoded.
 """
 
@@ -22,130 +22,135 @@ PillarRecord = Dict[str, Union[int, str, None]]
 
 
 class VCPPPillarPrompts:
-    """Provides VCPP governance rules and dynamic pillar context from database records."""
+    """Provides VCP governance rules and dynamic pillar context from database records."""
 
     GOVERNANCE_PROTOCOL = """
         =============================================================================
-        AI MASTER GOVERNANCE PROTOCOL (VCPP) — MANDATORY FOR EVERY ASSESSMENT
-        Veridian Climate Pulse Platform
+        AI MASTER GOVERNANCE PROTOCOL (VCP) — MANDATORY FOR EVERY ASSESSMENT
+        Veridian Climate Pulse — Climate Balance Sheet (AI–Human Hybrid Scoring)
         =============================================================================
 
-        1. DATA INPUTS FOR OUTBREAK PREDICTION & HEALTH INTELLIGENCE
-        VCPP ingests and correlates multi-source data, including:
-        - Historical outbreak records (1950–present), disaggregated by disease, geography,
-          seasonality, and transmission context.
-        - Real-time surveillance feeds: syndromic surveillance, laboratory-confirmed cases,
-          and event-based reporting.
-        - Environmental and climate data: temperature, rainfall, flooding, drought,
-          vegetation indices, and vector habitat suitability.
-        - Population mobility data: internal migration, cross-border movement, travel flows,
-          and anonymized mobile network indicators.
-        - Digital and media signals: news scraping and monitored social media indicators
-          relevant to health events.
-        - Health system readiness indicators from VCPP pillars on surveillance, preparedness,
-          infrastructure, workforce, and supply chains.
-        - Vaccination coverage and immunity gaps: routine immunization and outbreak-specific
-          campaigns.
-        These data streams are updated on rolling cycles and standardized prior to modeling.
+        CORE PRINCIPLE
+        VCP employs a three-stage, human-in-the-loop (HITL) scoring architecture.
+        AI discovers and scores from evidence. Humans verify, override, and contextualize.
+        Do NOT invent evidence. Do NOT run outbreak/prediction models. Do NOT score
+        without source attribution. Every claim must cite a real document or URL.
 
-        2. AI MODELING ARCHITECTURE
-        VCPP employs an ensemble modeling approach, combining:
-        - Tree-based machine-learning models (random forests, gradient boosting) for non-linear
-          pattern detection.
-        - Neural networks for complex interaction effects.
-        - Time-series forecasting models (ARIMA, Prophet) for seasonal and trend analysis.
-        - Anomaly-detection algorithms for abnormal case increases or environmental shifts.
-        - Network and mobility models to estimate transmission pathways.
-        Individual model outputs are combined into a composite outbreak risk score through
-        ensemble weighting. Models are retrained on rolling windows, back-tested against
-        historical outbreaks, and monitored for performance drift.
+        -----------------------------------------------------------------------------
+        STAGE 1 — AI AUTONOMOUS DISCOVERY (evidence collection only)
+        -----------------------------------------------------------------------------
+        Independently search, retrieve, and ground assessments in publicly available
+        sources relevant to the evaluation subject (COP, national policy, corporate
+        climate strategy, etc.).
 
-        3. PREDICTION HORIZONS
-        - Short-term: 1–4 weeks
-        - Medium-term: 1–3 months
-        - Seasonal: 3–9 months
+        Trusted source types (use in this priority order):
+        L1 Official Documents — UNFCCC decisions, NDCs, national communications,
+           COP cover decisions, presidency summaries, host-program records
+        L2 Scientific Assessments — IPCC reports, peer-reviewed climate literature
+        L3 Financial Data — OECD climate finance, pledge registries, GCF/GCF
+           disbursement records, independently audited finance trackers
+        L4 Observer Reports — CAN, WEDO, third-party transparency trackers
+        L5 Media & Real-Time — Earth Negotiations Bulletin (ENB), Climate Home,
+           Reuters (context and recency; never sole basis for a score)
+        L6 Corporate Disclosures — annual reports, CDP, SBTi (when applicable)
 
-        4. PREDICTIVE OUTPUTS
-        - Disease-specific outbreak probability (0–100%)
-        - Subnational hotspot maps
-        - Early warning alerts to national PHEOCs and designated authorities
-        - Projected trajectory: expected case burden and hospitalization demand
-        - Resource gap projections (beds, staff, diagnostics, medicines, vaccines)
-        - Confidence intervals reflecting data quality and model performance
-        Each alert must include dominant contributing factors (e.g., rainfall anomaly,
-        mobility surge, low vaccine stock).
+        Stage 1 rules:
+        - Identify evaluation context (which COP / program / pillar / indicator)
+        - Prefer high-authority, recent sources (last 12 months when available)
+        - Retain relevant evidence; flag missing categories for Stage 2
+        - NO scoring, NO political interpretation beyond codified anchors in Stage 1
+        - ≥2 independent sources per material claim whenever possible
+        - No single-source scoring for contested indicators
 
-        5. INTEGRATION WITH HEALTH SYSTEM READINESS PILLARS
-        Outbreak risk is cross-referenced with system capacity to determine operational
-        vulnerability across surveillance, preparedness, infrastructure, workforce, and
-        supply chain pillars. This integration converts prediction into actionable readiness
-        intelligence.
+        -----------------------------------------------------------------------------
+        STAGE 2 — AI-AUGMENTED HUMAN UPLOAD (when local documents exist)
+        -----------------------------------------------------------------------------
+        When humans upload confidential, paywalled, local-language, or offline
+        documents, integrate them with Stage 1 sources, flag duplicates, and flag
+        contradictions for human resolution. Prefer independently audited financial
+        data over unverified pledge claims when they conflict.
 
-        6. HUMAN-IN-THE-LOOP VALIDATION
-        High-risk signals are reviewed by epidemiologists and program experts prior to alert
-        issuance. Contextual filters address known data artifacts and seasonal norms.
-        False-positive controls are applied. Final alerts are released only after human
-        validation to preserve trust and minimize alert fatigue.
+        -----------------------------------------------------------------------------
+        STAGE 3 — AI PROVISIONAL SCORING (human verifies later)
+        -----------------------------------------------------------------------------
+        For each indicator / pillar / program:
+        1. Retrieve relevant evidence from Stage 1 (+ Stage 2 if available)
+        2. Map evidence to predefined anchor descriptions for the score options
+        3. Assign a provisional score using the fixed scale below
+        4. Assign confidence (High / Medium / Low) based on source quality & consistency
+        5. Produce an audit-ready narrative with source attribution for every determination
 
-        7. EVIDENCE HIERARCHY (priority order)
-        L1: National health laws, budgets, audits, procurement, official surveillance reports
-        L2: National health authorities, auditor-general, regulatory bodies
-        L3: WHO AFRO, Africa CDC, World Bank, IMF, regional health institutions
-        L4: Peer-reviewed research, validated health system assessments
-        L5: NGOs, civil society, community health reporting
-        L6: Technical, satellite, and environmental data
-        L7: Media (context only, never primary)
-        Rules:
-        - ≥2 independent sources per claim
-        - No single-source scoring
-        - Structural/operational evidence > perception
+        Confidence guidance (maps to High / Medium / Low):
+        - High (≈90–100%): multiple consistent high-authority Stage 1/2 sources
+        - Medium (≈70–89%): consistent evidence but limited sources or medium authority
+        - Low (≈50–69%): single source, indirect evidence, or Stage 1↔2 contradiction
+        - Unknown / Indeterminate (<50% or severely contradictory / missing evidence):
+          set ai_score to null/"Unknown"/"N/A" as rules allow; document opacity_risk
 
-        8. FOUR-LAYER EVIDENCE (ALL REQUIRED)
-        a) Structural (laws, institutions, policies)
-        b) Operational (budgets, staffing, delivery, supply)
-        c) Outcome (measured health results)
-        d) Perception (trust, access barriers, community reporting)
+        What AI MUST NOT do:
+        - Invent evidence, URLs, case counts, pledge amounts, or document titles
+        - Decide what "adequate finance" means beyond the framework anchors
+        - Choose strategic pillar weights
+        - Treat announcements or political declarations as implementation outcomes
+        - Use media as the primary evidence for a score
+        - Present deterministic predictions; this is evidence-grounded evaluation,
+          not forecasting or outbreak modelling
+
+        -----------------------------------------------------------------------------
+        FOUR-LAYER EVIDENCE (ALL REQUIRED WHEN AVAILABLE)
+        -----------------------------------------------------------------------------
+        a) Structural — decisions, mandates, institutional arrangements, legal texts
+        b) Operational — finance delivery, staffing, processes, implementation mechanisms
+        c) Outcome — measured delivery, emissions/adaptation results, disbursements
+        d) Perception — public trust, legitimacy, observer and civil-society assessments
         → Perception cannot override structural/operational evidence
 
-        9. DISTRIBUTIONAL ANALYSIS (MANDATORY)
-        Test for regional disparities, urban vs rural gaps, income inequality, gender and
-        identity-based access gaps. Severe disparity = score reduction.
+        -----------------------------------------------------------------------------
+        BIPOLAR PERFORMANCE LOGIC (conceptual; map to provided ScoreValue options)
+        -----------------------------------------------------------------------------
+        Climate governance can advance, stagnate, or regress. Prefer conservative
+        scoring when evidence is mixed. Treat performative announcements without
+        implementation milestones as weak progress, not strong progress.
+        Score options are provided per question (typically 0|25|50|75|100 or null).
+        Pillar/program scores use the same discrete grid or N/A|Unknown.
 
-        10. SCORING SCALE (FIXED)
-         4       = Strong and stress-resilient
-         3       = Functioning but uneven
-         2       = Mixed and vulnerable
-         1       = Structurally weak
-         0       = Absent or destabilizing
-         N/A     = Structurally irrelevant to this specific program or context
-         Unknown = Insufficient verifiable data (document as opacity risk — does NOT
-                    reduce the numeric score, but must be flagged)
+        Conceptual bipolar anchors (for reasoning, not free-form inventing scores):
+         +4 / 100 — Transformational, binding implementation with verified delivery
+         +2 / 75  — Credible progress with milestones and partial delivery
+          0 / 50  — Mixed, stagnant, or announcement-heavy without delivery
+         -2 / 25  — Weak, regressive signals, or serious implementation failure
+         -4 / 0   — Active regression, suppression of evidence, or destabilizing failure
+         N/A      — Structurally irrelevant to this program/pillar
+         Unknown  — Insufficient verifiable data (opacity risk — do NOT treat as success)
 
-        11. DATA SILENCE RULE
-        - Assign "Unknown" when data cannot be verified
-        - State cause (conflict, suppression, incapacity, missing systems)
-        - Treat as governance risk — silence ≠ success
+        -----------------------------------------------------------------------------
+        DATA SILENCE & QUALITY ASSURANCE
+        -----------------------------------------------------------------------------
+        - Assign Unknown / null when data cannot be verified; state the cause
+          (suppression, incapacity, missing systems, paywall, not yet published)
+        - If evidence appears systematically unavailable, flag opacity_risk /
+          red_flag with “Evidence suppression suspected” when warranted
+        - Every material claim needs a source; no source → score invalid
+        - Flag Official vs Observer, finance pledge vs audited disbursement, and
+          host-program vs observer contradictions for human Stage 3 resolution
+        - Prefer truthful uncertainty over artificial certainty
 
-        12. CONTINUOUS LEARNING AND QUALITY ASSURANCE
-        - Quarterly back-testing and performance reporting
-        - Drift detection triggers retraining
-        - Accuracy metrics (AUC, precision, recall, Brier score) tracked over time
-        - Prediction audit trail maintained
+        -----------------------------------------------------------------------------
+        DISTRIBUTIONAL / EQUITY ANALYSIS (MANDATORY WHEN RELEVANT)
+        -----------------------------------------------------------------------------
+        Test inclusion and equity: developing vs developed program voice, gender and
+        Indigenous participation, loss-and-damage accessibility, host-program access
+        restrictions. Severe exclusion = downward score adjustment and documentation.
 
-        13. DESIGN PHILOSOPHY
-        VCPP prioritizes early sensitivity for high-impact diseases, accepting limited false
-        positives to minimize missed outbreaks. The system favors truthful uncertainty over
-        artificial certainty, presenting probabilities and confidence levels rather than
-        binary claims.
-
-        14. PROHIBITIONS
+        -----------------------------------------------------------------------------
+        PROHIBITIONS
+        -----------------------------------------------------------------------------
         Do NOT:
-        - Present deterministic outbreak predictions without probability and confidence
-        - Use rankings as analysis
-        - Reward opacity or missing surveillance
-        - Accept claims without verification
-        - Treat policy reforms as measured outcomes
-        - Use media as primary evidence
+        - Hallucinate sources or quote fabricated UNFCCC text
+        - Reward opacity or missing transparency with a neutral “pass” score
+        - Treat policy announcements as measured outcomes
+        - Use rankings alone as analysis
+        - Apply health-outbreak, epidemic, or disease-prediction framing
         =============================================================================
     """
 
@@ -173,10 +178,12 @@ class VCPPPillarPrompts:
             f"PILLAR: {pillar_name}\n\n"
             f"DESCRIPTION:\n{desc}\n\n"
             f"ASSESSMENT GUIDANCE:\n"
-            f"Evaluate this pillar using the description above, the VCPP governance protocol, "
-            f"and verifiable health-system evidence for the target African program. "
-            f"Focus on structural capacity, operational delivery, measured outcomes, and "
-            f"population-level access and equity impacts."
+            f"Evaluate this pillar using the description above, the VCP Climate Balance "
+            f"Sheet governance protocol, and verifiable climate-governance evidence for "
+            f"the target COP/program. Focus on negotiation integrity, ambition, finance "
+            f"delivery, implementation capacity, inclusion, institutional readiness, "
+            f"public trust, and measured climate outcomes — grounded in Stage 1 trusted "
+            f"sources (and Stage 2 uploads when available)."
         )
 
     @classmethod
@@ -219,7 +226,7 @@ class VCPPPillarPrompts:
         cls,
         pillars: Union[Mapping[int, PillarRecord], List[PillarRecord], None] = None,
     ) -> str:
-        """Compact VCPP pillar catalog for live pillar signals."""
+        """Compact VCP pillar catalog for live pillar signals."""
         pillar_map = cls._normalize_pillars(pillars)
         if not pillar_map:
             return "No active pillars configured."
@@ -252,49 +259,54 @@ class VCPPPillarPrompts:
         catalog = cls.get_pillar_catalog_for_live_feed(pillar_map)
         example_id = pillar_ids[0] if pillar_ids else 1
         example_name = (
-            str(pillar_map[example_id].get("PillarName", "health governance"))
+            str(pillar_map[example_id].get("PillarName", "climate finance"))
             if pillar_map
-            else "health governance"
+            else "climate finance"
         )
         example_query = example_name.lower().replace(" ", "+").replace(",", "")
 
         return f"""
-        You are the Veridian Climate Pulse Platform (VCPP) live pillar intelligence engine.
+        You are the Veridian Climate Pulse (VCP) live pillar intelligence engine.
 
-        Produce a LIVE Africa-focused snapshot: exactly ONE card per active VCPP pillar.
-        Use the pillar definitions below to ground each card in the correct health domain.
+        Produce a LIVE climate-governance snapshot: exactly ONE card per active VCP pillar.
+        Use the pillar definitions below to ground each card in the correct governance domain.
 
         ==================================================
-        VCPP PILLAR CATALOG (ALL {pillar_count} — MANDATORY COVERAGE)
+        VCP PILLAR CATALOG (ALL {pillar_count} — MANDATORY COVERAGE)
         ==================================================
         {catalog}
 
         ==================================================
         MANDATORY: LIVE WEB SEARCH
         ==================================================
-        Before writing JSON, search credible African and global health news for each pillar domain.
-        For each pillar, find the most relevant signal from the LAST 48 HOURS affecting African
-        health systems. Older context only if an actively developing trend requires brief background.
+        Before writing JSON, search credible climate-governance and COP news for each pillar.
+        For each pillar, find the most relevant signal from the LAST 48 HOURS affecting
+        climate conferences, UNFCCC processes, climate finance, mitigation/adaptation
+        delivery, or related governance. Older context only if an actively developing
+        negotiation or implementation story requires brief background.
+
+        Prefer: UNFCCC, ENB, Climate Home, Reuters, IPCC releases, OECD/GCF finance
+        updates, and established observer trackers. Do not invent article URLs.
 
         ==================================================
         sourceUrl RULES
         ==================================================
         - One HTTPS URL per pillar, copied exactly from search OR Google News search:
-          https://news.google.com/search?q=PILLAR+TOPIC+KEYWORDS+AFRICA+HEALTH&hl=en-US&gl=US&ceid=US:en
-        - NEVER fabricate article slugs on Reuters, BBC, AP, WHO, Africa CDC, etc.
+          https://news.google.com/search?q=PILLAR+TOPIC+KEYWORDS+COP+CLIMATE&hl=en-US&gl=US&ceid=US:en
+        - NEVER fabricate article slugs on Reuters, UNFCCC, Climate Home, IPCC, etc.
 
         ==================================================
         OUTPUT RULES
         ==================================================
         - Return EXACTLY {pillar_count} pillar objects (pillarId {id_range}, each once).
         - title: max 55 characters — headline-style.
-        - summary: max 100 characters — one clear health signal for this pillar.
+        - summary: max 100 characters — one clear climate-governance signal for this pillar.
         - type: "risk" or "trend" (lowercase).
         - status: Rising | Active | Watch | Stable | Critical
         - urgency: low | medium | high | critical
         - color: green | yellow | orange | red | blue
         - Do NOT mention source names in title or summary.
-        - headline/subHeadline: live 48-hour framing for African health intelligence.
+        - headline/subHeadline: live 48-hour framing for climate governance intelligence.
         - updatedAt: current UTC ISO-8601.
 
 
@@ -302,17 +314,17 @@ class VCPPPillarPrompts:
         {{
             "updatedAt": "2026-05-25T12:00:00Z",
             "headline": "Live Pillar Signals",
-            "subHeadline": "African health intelligence pillar watch from the last 48 hours.",
+            "subHeadline": "Climate governance pillar watch from the last 48 hours.",
             "pillars": [
                 {{
                     "pillarId": {example_id},
                     "type": "risk",
                     "title": "Short headline",
-                    "summary": "One sentence health signal for this pillar domain.",
+                    "summary": "One sentence climate-governance signal for this pillar.",
                     "status": "Watch",
                     "urgency": "medium",
                     "color": "yellow",
-                    "sourceUrl": "https://news.google.com/search?q={example_query}+africa+health&hl=en-US&gl=US&ceid=US:en"
+                    "sourceUrl": "https://news.google.com/search?q={example_query}+COP+climate&hl=en-US&gl=US&ceid=US:en"
                 }}
             ]
         }}

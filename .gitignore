@@ -267,7 +267,7 @@ config.inil
 secrets.json
 credentials.json
 *.VCP
-*.ahi
+*.vcp
 *.key
 *.cert
 

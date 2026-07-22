@@ -15,9 +15,9 @@ class ReadProcessDocument:
         self.processor = processor or DocumentProcessor()
 
     async def _get_doc_from_sql(self,program_doc_id:int = None):
-        where_clause = f"where IsDeleted=0 and CountryDocumentID={program_doc_id}" 
+        where_clause = f"where IsDeleted=0 and ProgramDocumentID={program_doc_id}" 
         return await self.db_repository.engine.fetch_df_async(
-        f"select CountryDocumentID,CountryID,FilePath,FileType ,PillarID,DocumentLevel from CountryDocuments  {where_clause}")
+        f"select ProgramDocumentID,ClimateProgramID,FilePath,FileType ,PillarID,DocumentLevel from ProgramDocuments  {where_clause}")
     
 
     async def process_document(self,program_doc_id: int):
@@ -31,12 +31,12 @@ class ReadProcessDocument:
                     file_path = doc.FilePath,
                     file_type = doc.FileType,
                     document_level = doc.DocumentLevel,
-                    program_doc_id = doc.CountryDocumentID,
-                    program_id = doc.CountryID,
+                    program_doc_id = doc.ProgramDocumentID,
+                    program_id = doc.ClimateProgramID,
                     pillar_id = doc.PillarID
                 )
             except Exception as e:
-                logger.error(f"Failed to analyze program {doc.CountryID}: {e}")
+                logger.error(f"Failed to analyze program {doc.ClimateProgramID}: {e}")
                 continue        
 
     async def delete_document(self,program_doc_id: int):
@@ -47,15 +47,15 @@ class ReadProcessDocument:
             for doc in df.itertuples(index=False):              
                 self.processor.delete_document(
                     document_level = doc.DocumentLevel,
-                    program_doc_id = doc.CountryDocumentID,
-                    program_id = doc.CountryID)
+                    program_doc_id = doc.ProgramDocumentID,
+                    program_id = doc.ClimateProgramID)
 
                 deleteQuery = """
                     DELETE FROM DocumentChunks
-                    WHERE CountryDocumentID = ?;
+                    WHERE ProgramDocumentID = ?;
 
                     DELETE FROM DocumentTOC
-                    WHERE CountryDocumentID = ?;
+                    WHERE ProgramDocumentID = ?;
                 """
 
                 await self.db_repository.engine.execute_write_async(

@@ -210,8 +210,8 @@ class RAGQueryService:
             SELECT t.TOCID, t.SectionPath, t.SectionTitle, t.SectionLevel,
                    t.PillarID, cd.FileName
             FROM DocumentTOC t
-            JOIN CountryDocuments cd ON cd.CountryDocumentID = t.CountryDocumentID
-            WHERE t.CountryID = ? AND cd.IsDeleted = 0
+            JOIN ProgramDocuments cd ON cd.ProgramDocumentID = t.ProgramDocumentID
+            WHERE t.ClimateProgramID = ? AND cd.IsDeleted = 0
         """
         # Future: add   AND t.TenantID = ?   when multi-tenant
         return await self._db.engine.fetch_dicts_async(query, (program_id,))
@@ -222,7 +222,7 @@ class RAGQueryService:
             SELECT t.TOCID, t.SectionPath, t.SectionTitle, t.SectionLevel,
                    t.PillarID, cd.FileName
             FROM DocumentTOC t
-            JOIN CountryDocuments cd ON cd.CountryDocumentID = t.CountryDocumentID
+            JOIN ProgramDocuments cd ON cd.ProgramDocumentID = t.ProgramDocumentID
             WHERE  cd.IsDeleted = 0 or DocumentLevel Like ?
         """
         documentLevel = "Global"
@@ -282,9 +282,9 @@ class RAGQueryService:
             "Global"
             if program_id is None
             else (
-                f"Country_{program_id}"
+                f"Program_{program_id}"
                 if pillar_id is None
-                else f"Country_Pillar_{program_id}"
+                else f"Program_Pillar_{program_id}"
             )
         )
         try:
@@ -359,7 +359,7 @@ class RAGQueryService:
             # SYSTEM PROMPT
             # ---------------------------------------------------------
             system_prompt = (
-                VCPPromptTemplates.Country_executive_slides_prompt(
+                VCPPromptTemplates.Program_executive_slides_prompt(
                     publicContext=ai_program_context,
                     allPillarContexts=allPillarContexts
                 )
@@ -418,7 +418,7 @@ class RAGQueryService:
         Fetch GDELT articles (one variant per request, 5s throttle between calls).
         Tries at most two variants if the first returns no articles.
         """
-        programs = await self._db.get_active_countries()
+        programs = await self._db.get_active_programs()
         all_program_codes, region_groups = VCPPromptTemplates.build_gdelt_program_scope(
             programs
         )

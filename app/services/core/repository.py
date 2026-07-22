@@ -49,17 +49,17 @@ class DatabaseRepository:
     # score and Kpi recalculation
     # ------------------------------------------------------------------
 
-    async def AiRecalculateCountryScore(self, programID: int) -> None:
+    async def AiRecalculateProgramScore(self, programID: int) -> None:
 
         await self.engine.execute_sp_async(
-            "EXEC sp_AiRecalculateCountryScore @CountryID = ?",
+            "EXEC sp_AiRecalculateProgramScore @ClimateProgramID = ?",
             (programID,),
         )
 
     async def AiInsertAnalyticalLayerResults(self, programID: int) -> None:
 
         await self.engine.execute_sp_async(
-            "EXEC sp_AiInsertAnalyticalLayerResults @CountryID = ?",
+            "EXEC sp_AiInsertAnalyticalLayerResults @ClimateProgramID = ?",
             (programID,),
         )
     # ------------------------------------------------------------------
@@ -71,16 +71,16 @@ class DatabaseRepository:
             return
 
         col_order = [
-            "CountryID", "PillarID", "QuestionID", "Year",
+            "ClimateProgramID", "PillarID", "QuestionID", "Year",
             "AIScore", "AIProgress", "EvaluatorScore", "Discrepancy",
             "ConfidenceLevel", "EvidenceSummary",
             "StructuralEvidence", "OperationalEvidence",
             "OutcomeEvidence", "PerceptionEvidence",
             "TemporalScope", "DistortionScreening",
             "RelationalDependencies",
-            "StressPoliticalShock", "StressEconomicShock",
-            "StressNarrativeShock", "StressOverallResilienceShock",
-            "InequalityAdjustment", "OpacityRisk", "RedFlag",
+            "StressGeopoliticalShock", "StressFinanceShock",
+            "StressLegitimacyShock", "StressOverallResilienceShock",
+            "InclusionEquityAdjustment", "OpacityRisk", "RedFlag",
             "SourceName", "SourceType", "SourceURL",
             "SourceDataYear", "SourceHierarchyLevel",
             "SourceDataExtract", "SourcesConsulted",
@@ -88,11 +88,11 @@ class DatabaseRepository:
 
         records =  self.engine.rows_to_tuples(rows, col_order)
         await self.engine.execute_sp_async(
-            "{CALL usp_AiBulkUpsertPillarQuestionCountryEvaluations (?)}",
+            "{CALL usp_AiBulkUpsertPillarQuestionProgramEvaluations (?)}",
             (records,),
         )
 
-        await self.AiRecalculateCountryScore(programID)
+        await self.AiRecalculateProgramScore(programID)
 
     # ------------------------------------------------------------------
     # Pillar evaluations
@@ -107,7 +107,7 @@ class DatabaseRepository:
             return
 
         await self.engine.execute_sp_async(
-            "{CALL usp_AiBulkUpsertCountryPillarEvaluations (?, ?)}",
+            "{CALL usp_AiBulkUpsertProgramPillarEvaluations (?, ?)}",
             (json.dumps(rows), json.dumps(sub_rows or [])),
         )
 
@@ -120,23 +120,23 @@ class DatabaseRepository:
             return
 
         col_order = [
-            "CountryID", "Year", "AIScore", "AIProgress",
+            "ClimateProgramID", "Year", "AIScore", "AIProgress",
             "EvaluatorScore", "Discrepancy", "ConfidenceLevel",
             "EvidenceSummary", "StructuralEvidence",
             "OperationalEvidence", "OutcomeEvidence", "PerceptionEvidence",
             "TemporalScope", "DistortionScreening",
-            "PoliticalShock", "EconomicShock", "NarrativeShock",
+            "GeopoliticalShock", "FinanceShock", "LegitimacyShock",
             "OverallStressResilience", "StressScoreAdjustment",
-            "InequalityAdjustment", "OpacityRisk", "NonCompensationNote",
+            "InclusionEquityAdjustment", "OpacityRisk", "NonCompensationNote",
             "CrossPillarPatterns", "RelationalIntegrity",
             "InstitutionalCapacity", "EquityAssessment",
-            "ConflictRiskOutlook", "StrategicRecommendation",
-            "DataTransparencyNote", "PrimarySource",
+            "GovernanceTrajectory", "StrategicRecommendation",
+            "AssessmentValueNote", "PrimarySource",
         ]
 
         records = self.engine.rows_to_tuples(rows, col_order)
         await self.engine.execute_sp_async(
-            "EXEC usp_AiBulkUpsertCountryEvaluations @CountryEvaluations = ?",
+            "EXEC usp_AiBulkUpsertProgramEvaluations @ProgramEvaluations = ?",
             (records,),
         )
 
@@ -157,8 +157,8 @@ class DatabaseRepository:
         query = """
             MERGE DocumentTOC AS target
             USING (
-                SELECT ? AS CountryDocumentID,
-                    ? AS CountryID,
+                SELECT ? AS ProgramDocumentID,
+                    ? AS ClimateProgramID,
                     ? AS PillarID,
                     ? AS SectionPath,
                     ? AS SectionTitle,
@@ -166,8 +166,8 @@ class DatabaseRepository:
                     ? AS PageStart,
                     ? AS PageEnd
             ) AS source
-            ON target.CountryDocumentID = source.CountryDocumentID
-            AND target.CountryID = source.CountryID
+            ON target.ProgramDocumentID = source.ProgramDocumentID
+            AND target.ClimateProgramID = source.ClimateProgramID
             AND (
                     (target.PillarID IS NULL AND source.PillarID IS NULL)
                     OR target.PillarID = source.PillarID
@@ -182,9 +182,9 @@ class DatabaseRepository:
                     SectionPath=source.SectionPath
 
             WHEN NOT MATCHED THEN
-                INSERT (CountryDocumentID, CountryID, PillarID, SectionPath,
+                INSERT (ProgramDocumentID, ClimateProgramID, PillarID, SectionPath,
                         SectionTitle, SectionLevel, PageStart, PageEnd)
-                VALUES (source.CountryDocumentID, source.CountryID, source.PillarID,
+                VALUES (source.ProgramDocumentID, source.ClimateProgramID, source.PillarID,
                         source.SectionPath, source.SectionTitle,
                         source.SectionLevel, source.PageStart, source.PageEnd)
 
@@ -221,7 +221,7 @@ class DatabaseRepository:
 
         query = """
             INSERT INTO DocumentChunks
-                (ChunkID, CountryDocumentID, TOCID, CountryID, PillarID,
+                (ChunkID, ProgramDocumentID, TOCID, ClimateProgramID, PillarID,
                  ChunkIndex, ChunkText)
             VALUES (?,?,?,?,?,?,?)
         """
@@ -257,13 +257,13 @@ class DatabaseRepository:
         pillars = await self.get_active_pillars()
         return {int(p["PillarID"]): p for p in pillars}
 
-    async def get_active_countries(self) -> List[Dict[str, Any]]:
+    async def get_active_programs(self) -> List[Dict[str, Any]]:
         """Active programs for GDELT scope and emerging-trends context."""
         query = """
-            SELECT CountryName, Region, CountryCode
-            FROM Programs
+            SELECT ProgramName, Region, ProgramCode
+            FROM ClimatePrograms
             WHERE IsDeleted = 0
-            ORDER BY Region, CountryName
+            ORDER BY Region, ProgramName
         """
         return await self.engine.fetch_dicts_async(query)
 
@@ -277,8 +277,8 @@ class DatabaseRepository:
         query = """
             SELECT 
                 a.AIProgress as AfricaHealthScore,
-                c.CountryName,
-                c.Continent,
+                c.ProgramName,
+                c.Location,
                 a.EvidenceSummary,
                 a.StructuralEvidence,
                 a.OutcomeEvidence,
@@ -286,12 +286,12 @@ class DatabaseRepository:
                 a.CrossPillarPatterns,
                 a.StrategicRecommendation,
                 p.PillarName
-            FROM AICountryScores a
+            FROM AIProgramScores a
             JOIN Programs c 
-                ON a.CountryID = c.CountryID 
+                ON a.ClimateProgramID = c.ClimateProgramID 
                 AND c.IsDeleted = 0
             left join pillars p on p.PillarID=?
-            WHERE a.CountryID = ?
+            WHERE a.ClimateProgramID = ?
             AND a.Year = ?
         """
 
@@ -312,7 +312,7 @@ class DatabaseRepository:
             return
 
         query = """
-            UPDATE AICountryScores
+            UPDATE AIProgramScores
             SET 
                 ImmediateSituationSummary = ?,
                 KeyDevelopments = ?,
@@ -323,7 +323,7 @@ class DatabaseRepository:
                     THEN ? 
                     ELSE EvidenceSummary 
                 END
-            WHERE CountryID = ?
+            WHERE ClimateProgramID = ?
             AND Year = ?
         """
 
@@ -372,7 +372,7 @@ class DatabaseRepository:
     async def GetCrossComparisionLocalContextDataForLLM(self, program_ids: List[str]) -> List[Dict]:
 
         query = """
-            EXEC dbo.usp_CountryCrossComparision_faq ?
+            EXEC dbo.usp_ProgramCrossComparision_faq ?
         """
 
         params = (

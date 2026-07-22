@@ -33,7 +33,7 @@ TrendIcon = Literal[
 ]
 
 
-class EmergingTrendCountryCard(BaseModel):
+class EmergingTrendProgramCard(BaseModel):
     program: str = Field(..., min_length=2, max_length=200)
     programCode: str = Field(..., min_length=2, max_length=4)
     region: str = Field(..., min_length=2, max_length=80)
@@ -85,7 +85,7 @@ class EmergingTrendsResult(BaseModel):
     updatedAt: str
     headline: str = Field(..., min_length=3, max_length=120)
     subHeadline: str = Field(..., min_length=10, max_length=200)
-    programs: List[EmergingTrendCountryCard] = Field(..., min_length=1, max_length=250)
+    programs: List[EmergingTrendProgramCard] = Field(..., min_length=1, max_length=250)
 
     @field_validator("updatedAt")
     @classmethod

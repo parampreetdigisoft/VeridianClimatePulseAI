@@ -28,7 +28,7 @@ class EarlyWarningItem(BaseModel):
     impactLevel: str
 
 
-class CountryExecutiveSlidesResult(BaseModel):
+class ProgramExecutiveSlidesResult(BaseModel):
     programId: int
     programName: str
 
@@ -43,7 +43,7 @@ class CountryExecutiveSlidesResult(BaseModel):
     earlyWarnings: List[EarlyWarningItem]
 
 
-class ChatCountryExecutiveSlidesResponse(BaseModel):
+class ChatProgramExecutiveSlidesResponse(BaseModel):
     success: bool
     message: str
-    result: CountryExecutiveSlidesResult
+    result: ProgramExecutiveSlidesResult

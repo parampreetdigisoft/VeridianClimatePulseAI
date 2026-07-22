@@ -12,7 +12,7 @@ class ChatGlobalRequest(BaseModel):
     historyText: Optional[str] = None
     faqid: Optional[int] = None
 
-class ChatCountryRequest(BaseModel):
+class ChatProgramRequest(BaseModel):
     programID: int
     questionText: str
     historyText: Optional[str] = None
@@ -27,10 +27,10 @@ class ChatCrossComparisionRequest(BaseModel):
     faqid: Optional[int] = None
 
 
-class ChatCountryExecutiveSlidesRequest(BaseModel):
+class ChatProgramExecutiveSlidesRequest(BaseModel):
     programId: int
 
-class ChatCountryExecutiveSlidesResponse(BaseModel):
+class ChatProgramExecutiveSlidesResponse(BaseModel):
     success: bool
     message: str
     result: Any

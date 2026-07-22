@@ -92,31 +92,31 @@ class ScoreAnalyzerService:
     #  Data fetch helpers                                                 #
     # ------------------------------------------------------------------ #
 
-    async def _fetch_countries(self, program_id: Optional[int] = None):
+    async def _fetch_programs(self, program_id: Optional[int] = None):
         where = (
-            f"WHERE IsDeleted = 0 AND CountryID = {program_id}"
+            f"WHERE IsDeleted = 0 AND ClimateProgramID = {program_id}"
             if program_id
             else "WHERE IsDeleted = 0"
         )
         return await self._db.engine.fetch_df_async(
-            f"SELECT CountryID, CountryName, Continent FROM Programs {where}"
+            f"SELECT ClimateProgramID, ProgramName, Location FROM ClimatePrograms {where}"
         )
 
     @staticmethod
     def _continent_label(program) -> str:
-        return f"Continent: {program.Continent}, Program: {program.CountryName}"
+        return f"Location: {program.Location}, Program: {program.ProgramName}"
 
     # ------------------------------------------------------------------ #
     #  Public entry points                                                #
     # ------------------------------------------------------------------ #
 
-    async def analyze_all_countries(self, program_id: Optional[int] = None) -> bool:
+    async def analyze_all_programs(self, program_id: Optional[int] = None) -> bool:
         """
         Run full analysis (questions → pillars → program) for all programs,
         or a single program when program_id is provided.
         """
         try:
-            programs = await self._fetch_countries(program_id)
+            programs = await self._fetch_programs(program_id)
             if programs.empty:
                 logger.error("No programs found for analysis.")
                 return False
@@ -129,14 +129,14 @@ class ScoreAnalyzerService:
                 except Exception as exc:
                     logger.error(
                         "Program %d (%s) analysis failed: %s",
-                        program.CountryID,
-                        program.CountryName,
+                        program.ClimateProgramID,
+                        program.ProgramName,
                         exc,
                     )
             return True
 
         except Exception as exc:
-            logger.error("analyze_all_countries failed: %s", exc, exc_info=True)
+            logger.error("analyze_all_programs failed: %s", exc, exc_info=True)
             raise
 
     async def analyze_single_program(self, program_id: int) -> bool:
@@ -173,7 +173,7 @@ class ScoreAnalyzerService:
     async def _run_for_program(self, program_id: int, handler, **kwargs) -> bool:
         """Fetch a single program row then call *handler* on it."""
         try:
-            programs = await self._fetch_countries(program_id)
+            programs = await self._fetch_programs(program_id)
             if programs.empty:
                 return False
             for program in programs.itertuples(index=False):
@@ -200,10 +200,10 @@ class ScoreAnalyzerService:
         missing_only = False
     ) -> bool:
 
-        programID = int(program.CountryID)
+        programID = int(program.ClimateProgramID)
         year = datetime.now().year
 
-        where = f"CountryID = {programID}"
+        where = f"ClimateProgramID = {programID}"
 
         if pillar_id is not None:
             where += f" AND PillarID = {pillar_id}"
@@ -217,15 +217,9 @@ class ScoreAnalyzerService:
                     WHERE Year = {year}
                 )
             """
-
-        df = await self._db.get_view_data(
-            "vw_AiCountryPillarQuestionEvaluations",
-            where
-        )
-
-        df = await self._db.get_view_data("vw_AiCountryPillarQuestionEvaluations", where)
+        df = await self._db.get_view_data("vw_AiProgramPillarQuestionEvaluations", where)
         if df.empty:
-            logger.info("No questions found: program %d", program.CountryID)
+            logger.info("No questions found: program %d", program.ClimateProgramID)
             return False
 
         target_pillars = (
@@ -238,8 +232,8 @@ class ScoreAnalyzerService:
             for row in df[df["PillarID"] == pid].itertuples(index=False):
                 try:
                     ai_data = await self._ai.research_and_score_question(
-                        program_name=program.CountryName,
-                        continent=self._continent_label(program),
+                        program_name=program.ProgramName,
+                        location=self._continent_label(program),
                         pillarID=row.PillarID,
                         pillar_name=row.PillarName,
                         question_text=row.QuestionText,
@@ -248,29 +242,29 @@ class ScoreAnalyzerService:
                         logger.warning(
                             "AI failed for question %d, program %d",
                             row.QuestionID,
-                            program.CountryID,
+                            program.ClimateProgramID,
                         )
                         continue
 
-                    normalized = self._safe_normalized(row.NormalizedValue)
+                    normalized = self._safe_normalized(0)
                     batch.append(self._build_question_record(row, ai_data, normalized))
                     batch = await self._flushQuestion(
-                        program.CountryID, batch ,self._db.bulk_upsert_question_evaluations
+                        program.ClimateProgramID, batch ,self._db.bulk_upsert_question_evaluations
                     )
 
                 except Exception as exc:
                     logger.error(
                         "Question %d, program %d: %s",
                         row.QuestionID,
-                        program.CountryID,
+                        program.ClimateProgramID,
                         exc,
                         exc_info=True,
                     )
 
             await self._flushQuestion(
-                program.CountryID, batch ,self._db.bulk_upsert_question_evaluations, force=True
+                program.ClimateProgramID, batch ,self._db.bulk_upsert_question_evaluations, force=True
             )
-            await self._db.AiInsertAnalyticalLayerResults(program.CountryID)
+            await self._db.AiInsertAnalyticalLayerResults(program.ClimateProgramID)
 
         return True
 
@@ -280,13 +274,13 @@ class ScoreAnalyzerService:
         pillar_id: Optional[int] = None,
     ) -> bool:
         """Score every pillar for a program."""
-        where = f"programId = {program.CountryID}"
+        where = f"programId = {program.ClimateProgramID}"
         if pillar_id is not None:
             where += f" AND PillarID = {pillar_id}"
 
-        df = await self._db.get_view_data("vw_AiCountryPillarEvaluation", where)
+        df = await self._db.get_view_data("vw_AiProgramPillarEvaluation", where)
         if df.empty:
-            logger.info("No pillar evaluations found: program %d", program.CountryID)
+            logger.info("No pillar evaluations found: program %d", program.ClimateProgramID)
             return False
 
         pillar_batch: list[dict] = []
@@ -295,8 +289,8 @@ class ScoreAnalyzerService:
         for row in df.itertuples(index=False):
             try:
                 ai_data = await self._ai.research_and_score_pillar(
-                    program_name=program.CountryName,
-                    continent=self._continent_label(program),
+                    program_name=program.ProgramName,
+                    location=self._continent_label(program),
                     pillarId=row.PillarID,
                     pillar_name=row.PillarName
                 )
@@ -304,7 +298,7 @@ class ScoreAnalyzerService:
                     continue
 
                 pillar_batch.append(
-                    self._build_pillar_record(row, ai_data, program.CountryID)
+                    self._build_pillar_record(row, ai_data, program.ClimateProgramID)
                 )
                 source_batch.extend(self._build_source_records(row, ai_data))
 
@@ -316,23 +310,23 @@ class ScoreAnalyzerService:
                 logger.error(
                     "Pillar %d, program %d: %s",
                     row.PillarID,
-                    program.CountryID,
+                    program.ClimateProgramID,
                     exc,
                     exc_info=True,
                 )
 
         await self._flush_pillar(pillar_batch, source_batch, force=True)
-        await self._db.AiRecalculateCountryScore(program.CountryID)
+        await self._db.AiRecalculateProgramScore(program.ClimateProgramID)
         
         return True
 
     async def _analyze_program(self, program: Any, **_) -> bool:
         """Score the overall program-level Healthassessment."""
         df = await self._db.get_view_data(
-            "vw_AiCountryEvaluations", f"programId = {program.CountryID}"
+            "vw_AiProgramEvaluations", f"programId = {program.ClimateProgramID}"
         )
         if df.empty:
-            logger.info("No program evaluations found: program %d", program.CountryID)
+            logger.info("No program evaluations found: program %d", program.ClimateProgramID)
             return False
 
         batch: list[dict] = []
@@ -340,8 +334,8 @@ class ScoreAnalyzerService:
         for row in df.itertuples(index=False):
             try:
                 ai_data = await self._ai.research_and_score_program(
-                    program_name=program.CountryName,
-                    continent=self._continent_label(program),
+                    program_name=program.ProgramName,
+                    location=self._continent_label(program),
                 )
                 if not ai_data.get("success"):
                     continue
@@ -354,15 +348,15 @@ class ScoreAnalyzerService:
             except Exception as exc:
                 logger.error(
                     "Program evaluation %d: %s",
-                    program.CountryID,
+                    program.ClimateProgramID,
                     exc,
                     exc_info=True,
                 )
 
         await self._flush(batch, self._db.bulk_upsert_program_evaluations, force=True)
 
-        await self.immediateSituation(program.CountryID)
-        await self._db.AiRecalculateCountryScore(program.CountryID)
+        await self.immediateSituation(program.ClimateProgramID)
+        await self._db.AiRecalculateProgramScore(program.ClimateProgramID)
         
         return True
 
@@ -371,8 +365,8 @@ class ScoreAnalyzerService:
         year = datetime.now().year        
 
         ai_program= await self._db.get_ai_program_context(program_id, year)
-        program_Name = ai_program["CountryName"]
-        continent =ai_program["Continent"]
+        program_Name = ai_program["ProgramName"]
+        location =ai_program["Location"]
 
         question = f"""
         What are the most critical recent developments, emerging risks, structural weaknesses, and key strengths across all major sectors in {program_Name}? Include insights on governance, security, economy, social cohesion, infrastructure, and institutional effectiveness. Focus on cross-pillar patterns and high-impact information relevant for executive-level program assessment and situational awareness.
@@ -387,7 +381,7 @@ class ScoreAnalyzerService:
 
         ai_data = await self._ai.immediate_situation(
                     program_name=program_Name,
-                    continent =continent,
+                    location =location,
                     ai_program_context=ai_program_context,
                     documentContext=document_context,
                     year=year
@@ -414,7 +408,7 @@ class ScoreAnalyzerService:
         evaluator_score = self._to_float(normalized_value * 100)
 
         return {
-            "CountryID": row.CountryID,
+            "ClimateProgramID": row.ClimateProgramID,
             "PillarID": row.PillarID,
             "QuestionID": row.QuestionID,
             "Year": self._to_int(ai.get("Year")),
@@ -431,11 +425,11 @@ class ScoreAnalyzerService:
             "TemporalScope": ai.get("TemporalScope"),
             "DistortionScreening": ai.get("DistortionScreening"),
             "RelationalDependencies": ai.get("RelationalDependencies"),
-            "StressPoliticalShock": ai.get("StressPoliticalShock"),
-            "StressEconomicShock": ai.get("StressEconomicShock"),
-            "StressNarrativeShock": ai.get("StressNarrativeShock"),
+            "StressGeopoliticalShock": ai.get("StressGeopoliticalShock"),
+            "StressFinanceShock": ai.get("StressFinanceShock"),
+            "StressLegitimacyShock": ai.get("StressLegitimacyShock"),
             "StressOverallResilienceShock": ai.get("StressOverallResilienceShock"),
-            "InequalityAdjustment": ai.get("InequalityAdjustment"),
+            "InclusionEquityAdjustment": ai.get("InclusionEquityAdjustment"),
             "OpacityRisk": ai.get("OpacityRisk"),
             "RedFlag": ai.get("RedFlag"),
             "SourceName": ai.get("SourceName"),
@@ -452,7 +446,7 @@ class ScoreAnalyzerService:
         evaluator_score = self._to_float(row.EvaluatorScore)
 
         return {
-            "CountryID": program_id,
+            "ClimateProgramID": program_id,
             "PillarID": row.PillarID,
             "Year": ai.get("Year"),
             "AIScore": self._to_float(ai.get("AIScore")),
@@ -468,15 +462,15 @@ class ScoreAnalyzerService:
             "TemporalScope": ai.get("TemporalScope"),
             "DistortionScreening": ai.get("DistortionScreening"),
             "RelationalIntegrity": ai.get("RelationalIntegrity"),
-            "StressPoliticalShock": ai.get("StressPoliticalShock"),
-            "StressEconomicShock": ai.get("StressEconomicShock"),
-            "StressNarrativeShock": ai.get("StressNarrativeShock"),
+            "StressGeopoliticalShock": ai.get("StressGeopoliticalShock"),
+            "StressFinanceShock": ai.get("StressFinanceShock"),
+            "StressLegitimacyShock": ai.get("StressLegitimacyShock"),
             "StressOverallResilience": ai.get("StressOverallResilience"),
             "StressScoreAdjustment": ai.get("StressScoreAdjustment"),
-            "InequalityAdjustment": ai.get("InequalityAdjustment"),
+            "InclusionEquityAdjustment": ai.get("InclusionEquityAdjustment"),
             "OpacityRisk": ai.get("OpacityRisk"),
             "NonCompensationNote": ai.get("NonCompensationNote"),
-            "GeographicEquityNote": ai.get("GeographicEquityNote"),
+            "InclusionAccessNote": ai.get("InclusionAccessNote"),
             "InstitutionalAssessment": ai.get("InstitutionalAssessment"),
             "DataGapAnalysis": ai.get("DataGapAnalysis"),
             "RedFlag": ai.get("RedFlag"),
@@ -487,7 +481,7 @@ class ScoreAnalyzerService:
         evaluator_score = self._to_float(row.EvaluatorScore)
 
         return {
-            "CountryID": row.CountryID,
+            "ClimateProgramID": row.ClimateProgramID,
             "Year": self._to_int(ai.get("Year") or datetime.now().year),
             "AIScore": self._to_float(ai.get("AIScore")),
             "AIProgress": ai_progress,
@@ -501,21 +495,21 @@ class ScoreAnalyzerService:
             "PerceptionEvidence": ai.get("PerceptionEvidence"),
             "TemporalScope": ai.get("TemporalScope"),
             "DistortionScreening": ai.get("DistortionScreening"),
-            "PoliticalShock": ai.get("PoliticalShock"),
-            "EconomicShock": ai.get("EconomicShock"),
-            "NarrativeShock": ai.get("NarrativeShock"),
+            "GeopoliticalShock": ai.get("GeopoliticalShock"),
+            "FinanceShock": ai.get("FinanceShock"),
+            "LegitimacyShock": ai.get("LegitimacyShock"),
             "OverallStressResilience": ai.get("OverallStressResilience"),
             "StressScoreAdjustment": ai.get("StressScoreAdjustment"),
-            "InequalityAdjustment": ai.get("InequalityAdjustment"),
+            "InclusionEquityAdjustment": ai.get("InclusionEquityAdjustment"),
             "OpacityRisk": ai.get("OpacityRisk"),
             "NonCompensationNote": ai.get("NonCompensationNote"),
             "CrossPillarPatterns": ai.get("CrossPillarPatterns"),
             "RelationalIntegrity": ai.get("RelationalIntegrity"),
             "InstitutionalCapacity": ai.get("InstitutionalCapacity"),
             "EquityAssessment": ai.get("EquityAssessment"),
-            "ConflictRiskOutlook": ai.get("ConflictRiskOutlook"),
+            "GovernanceTrajectory": ai.get("GovernanceTrajectory"),
             "StrategicRecommendation": ai.get("StrategicRecommendation"),
-            "DataTransparencyNote": ai.get("DataTransparencyNote"),
+            "AssessmentValueNote": ai.get("AssessmentValueNote"),
             "PrimarySource": ai.get("PrimarySource"),
             "VerifiedBy": None,
         }
@@ -524,7 +518,7 @@ class ScoreAnalyzerService:
         """Expand the Sources list from a pillar AI response into flat DB records."""
         return [
             {
-                "CountryID": row.CountryID,
+                "ClimateProgramID": row.ClimateProgramID,
                 "PillarID": row.PillarID,
                 "DataYear": self._to_int(src.get("data_year")),
                 "SourceType": src.get("source_type"),
@@ -541,7 +535,7 @@ class ScoreAnalyzerService:
         summary = ai.get("executive_summary", "")
 
         return {
-            "CountryID": programId,
+            "ClimateProgramID": programId,
             "immediateSituationSummary": ai.get("immediateSituationSummary", "Unknown"),
             "key_developments": ai.get("key_developments", "Unknown"),
             "critical_risks": ai.get("critical_risks"),

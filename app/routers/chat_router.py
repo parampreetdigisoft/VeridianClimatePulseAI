@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
-from app.view_models.ChatRequest import ChatCountryExecutiveSlidesRequest, ChatCountryExecutiveSlidesResponse, ChatCountryRequest, ChatCrossComparisionRequest, ChatGlobalRequest, ChatRequest
+from app.view_models.ChatRequest import ChatProgramExecutiveSlidesRequest, ChatProgramExecutiveSlidesResponse, ChatProgramRequest, ChatCrossComparisionRequest, ChatGlobalRequest, ChatRequest
 from app.view_models.AnalysisRequest import ChatResponse
 from app.view_models.EmergingTrendsResult import ChatEmergingTrendsResponse
 from app.view_models.PillarLiveSignalsResult import ChatPillarLiveSignalsResponse
@@ -43,7 +43,7 @@ async def ask(request: ChatRequest):
 
 
 @router.post("/program", response_model=ChatResponse)
-async def ask(request: ChatCountryRequest):
+async def ask(request: ChatProgramRequest):
     """
     Chat endpoint:
     - Accepts user question in body
@@ -112,8 +112,8 @@ async def ask(request: ChatCrossComparisionRequest):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.post("/executive-slides",response_model=ChatCountryExecutiveSlidesResponse)
-async def ask_Country_executive_slides(request: ChatCountryExecutiveSlidesRequest):
+@router.post("/executive-slides",response_model=ChatProgramExecutiveSlidesResponse)
+async def ask_Program_executive_slides(request: ChatProgramExecutiveSlidesRequest):
     """
     Executive intelligence dashboard endpoint.
 
@@ -127,11 +127,11 @@ async def ask_Country_executive_slides(request: ChatCountryExecutiveSlidesReques
 
     try:
 
-        response = await chat_service.answer_Country_executive_slides(
+        response = await chat_service.answer_Program_executive_slides(
             program_id=request.programId
         )
 
-        return ChatCountryExecutiveSlidesResponse(
+        return ChatProgramExecutiveSlidesResponse(
             success=response["success"],
             message=response["message"],
             result=response["result"]

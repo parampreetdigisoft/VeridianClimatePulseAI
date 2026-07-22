@@ -63,7 +63,7 @@ class ChatService:
         if len(ai_context) < 1:
             ai_context = "\n".join(f"{key}: {value}" for key, value in ai_program_context.items())
         pillar_name =ai_program_context["PillarName"]
-        programName =ai_program_context["CountryName"]
+        programName =ai_program_context["ProgramName"]
 
         answer = await rag_query_service.send_question_to_llm(questionText,ai_context,programName,pillar_name,historyText)
 
@@ -110,9 +110,9 @@ class ChatService:
 
         if len(programIDs) > 0:
             query = f"""
-                SELECT CountryName, Continent
-                FROM Programs
-                WHERE CountryID IN ({",".join(map(str, programIDs))})
+                SELECT ProgramName, Location
+                FROM ClimatePrograms
+                WHERE ClimateProgramID IN ({",".join(map(str, programIDs))})
             """
 
             programs = await self._db.engine.fetch_dicts_async(query)
@@ -138,7 +138,7 @@ class ChatService:
             )
 
         programName = ", ".join(
-            [program["CountryName"] for program in programs]
+            [program["ProgramName"] for program in programs]
         )
 
         pillar_name = "Get pillars from provided context"
@@ -154,7 +154,7 @@ class ChatService:
         return answer
     
 
-    async def answer_Country_executive_slides( self, program_id: int) -> Dict[str, Any]:
+    async def answer_Program_executive_slides( self, program_id: int) -> Dict[str, Any]:
         try:
             year = datetime.now().year
 
@@ -166,7 +166,7 @@ class ChatService:
                     "message": "program context not found"
                 }
 
-            program_name = ai_program["CountryName"]
+            program_name = ai_program["ProgramName"]
 
             ai_program_context = "\n".join(
                 f"{key}: {value}"
@@ -302,10 +302,10 @@ class ChatService:
             "health": "health",
         }
 
-        countries_raw = data.get("programs") or []
-        normalized_countries: List[Dict[str, Any]] = []
+        programs_raw = data.get("programs") or []
+        normalized_programs: List[Dict[str, Any]] = []
 
-        for item in countries_raw:
+        for item in programs_raw:
             if not isinstance(item, dict):
                 continue
 
@@ -347,7 +347,7 @@ class ChatService:
             )
             summary = ChatService._strip_source_mentions(summary)
 
-            normalized_countries.append(
+            normalized_programs.append(
                 {
                     "program": str(item.get("program", "")).strip(),
                     "programCode": str(item.get("programCode", "")).strip().upper()[:2],
@@ -365,7 +365,7 @@ class ChatService:
                 }
             )
 
-        if not normalized_countries:
+        if not normalized_programs:
             raise ValueError("Insufficient program cards in LLM response")
 
         updated_at = data.get("updatedAt")
@@ -381,7 +381,7 @@ class ChatService:
                     "Live global signals from the last 48 hours across governance, security, economy, and society.",
                 )
             ).strip(),
-            "programs": normalized_countries,
+            "programs": normalized_programs,
         }
 
     @staticmethod

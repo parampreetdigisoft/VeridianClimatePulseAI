@@ -30,7 +30,7 @@ async def run_analysis_task(task_name: str, coro):
 
 
 @router.post("/analyze/full", response_model=AnalysisResponse)
-async def analyze_all_countries_full():
+async def analyze_all_programs_full():
     """
     Analyze table data and provide global summary for the assessment result for all programs
     Returns immediately while analysis runs in background
@@ -39,8 +39,8 @@ async def analyze_all_countries_full():
         # Start analysis in background
         asyncio.create_task(
             run_analysis_task(
-                "analyze_all_countries_full",
-                score_analyzer_service.analyze_all_countries(),
+                "analyze_all_programs_full",
+                score_analyzer_service.analyze_all_programs(),
             )
         )
 
@@ -112,7 +112,7 @@ async def analyze_single_program_full(program_id: int):
         asyncio.create_task(
             run_analysis_task(
                 f"analyze_single_program_full_{program_id}",
-                score_analyzer_service.analyze_all_countries(program_id),
+                score_analyzer_service.analyze_all_programs(program_id),
             )
         )
 

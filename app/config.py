@@ -33,7 +33,7 @@ class Settings:
     # Database Configuration
     # ---------------------------
     DB_SERVER: str = os.getenv("DB_SERVER", "DESKTOP-I0TTFPS\SQLEXPRESS")
-    DB_NAME: str = os.getenv("DB_NAME", "HealthIntelligenceDB")
+    DB_NAME: str = os.getenv("DB_NAME", "ClimatePulseDB")
     DB_USE_WINDOWS_AUTH: bool = os.getenv("DB_USE_WINDOWS_AUTH", "True").lower() == "true"
     DB_USERNAME: str = os.getenv("DB_USERNAME", "")
     DB_PASSWORD: str = os.getenv("DB_PASSWORD", "")
