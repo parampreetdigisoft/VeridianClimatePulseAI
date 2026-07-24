@@ -131,7 +131,7 @@ class VCPPromptTemplates:
                     narrative shock. Adjust downward if the condition is unlikely to hold.
             Step 8: Apply inclusion/equity adjustment — developing-program voice, gender/
                     Indigenous participation, access restrictions. Adjust if imbalance found.
-            Step 9: Apply data silence protocol — assign null/"Unknown" and document cause
+            Step 9: Apply data silence protocol — assign null/"Indeterminate" and document cause
                     if evidence cannot be verified. Never reward silence as success.
             Step 10: Select final answer strictly from the provided ScoreValue options.
 
@@ -139,10 +139,10 @@ class VCPPromptTemplates:
             - High: 3+ high-authority sources, recent, cross-verified (≈90–100%)
             - Medium: ≥2 credible sources, partial verification (≈70–89%)
             - Low: limited/weak evidence, contradictions, or outdated data (≈50–69%)
-            - NA / Unknown: only when ai_score is null (<50% or indeterminate)
+            - NA / Indeterminate: only when ai_score is null (<50% or indeterminate)
 
             Rule:
-            - If ai_score is null → confidence_level MUST be "NA" or "Unknown"
+            - If ai_score is null → confidence_level MUST be "NA" or "Indeterminate"
             - If ai_score is 0–100 → confidence_level MUST be High, Medium, or Low
 
             SCORING RULE (CRITICAL):
@@ -167,9 +167,9 @@ class VCPPromptTemplates:
 
             OUTPUT: Return ONLY this exact JSON object (no markdown, no extra text):
             {{
-                "ai_score": <0|25|50|75|100|null>,
-                "ai_progress": <0.00-100.00 or null if Unknown or N/A>,
-                "confidence_level": "<High|Medium|Low | (NA | UnKnown if ai_score is null)>",
+                "ai_score": <-4|-3|-2|-1|0|1|2|3|4|null>,
+                "ai_progress": <0.00-100.00 or null if Indeterminate or N/A>,
+                "confidence_level": "<High|Medium|Low | (NA | Indeterminate if ai_score is null)>",
                 "evidence_summary": "<150-200 words for a general reader. What does the evidence show for this climate-governance indicator? Strengths and concerns. Plain language — no internal protocol jargon.>",
                 "four_layer_evidence": {{
                     "structural": "<5-80 words. Decisions, mandates, institutional arrangements found? 1-2 sentences.>",
@@ -178,7 +178,7 @@ class VCPPromptTemplates:
                     "perception": "<5-80 words. Observer/trust/legitimacy evidence found? State 'No data found' if unavailable.>"
                 }},
                 "temporal_scope": "<80-100 words. Earliest and most recent evidence years (prefer last 12 months when available). Note prior COP baselines if relevant.>",
-                "distortion_screening": "<80-100 words. Tested for performative proceduralism, pledge-delivery gaps, suppression. State: Clean, Suspect, or Unknown.>",
+                "distortion_screening": "<80-100 words. Tested for performative proceduralism, pledge-delivery gaps, suppression. State: Clean, Suspect, or Indeterminate.>",
                 "relational_dependencies": "<80-100 words. Which 2-3 other climate-governance pillars most affect this indicator, and how? 2-3 sentences.>",
                 "stress_simulation": {{
                     "geopolitical_shock": "<5-80 words. Hold under negotiation breakdown, geopolitical fracture, or host-program access crisis?>",
@@ -234,10 +234,10 @@ class VCPPromptTemplates:
                      climate-governance pillars? Are strengths undermined by weak dependents?
             Step 8:  Run three-scenario stress simulation. Adjust if stress-vulnerable.
             Step 9:  Apply inequality/inclusion adjustment when warranted.
-            Step 10: Apply data silence protocol for unverifiable points (Unknown / opacity).
+            Step 10: Apply data silence protocol for unverifiable points (Indeterminate / opacity).
             Step 11: Apply non-compensation rule — note if strength is offset by a weak
                      dependent domain (e.g. ambition without finance).
-            Step 12: Assign provisional score using the discrete grid (0|25|50|75|100|N/A|Unknown).
+            Step 12: Assign provisional score using the discrete grid (0|25|50|75|100|N/A|Indeterminate).
             Step 13: Provide sources — MANDATORY: return between 1 and 7 sources; each source
                      MUST include all required fields. Prefer real Stage 1 URLs; never invent.
 
@@ -272,8 +272,8 @@ class VCPPromptTemplates:
 
             OUTPUT: Return ONLY this exact JSON object (no markdown, no extra text):
             {{
-                "ai_score": <0|25|50|75|100|"N/A"|"Unknown">,
-                "ai_progress": <0.00-100.00 or null if Unknown>,
+                "ai_score": <-4|-3|-2|-1|0|1|2|3|4|null>,
+                "ai_progress": <0.00-100.00 or null if Indeterminate or N/A>,
                 "confidence_level": "<High|Medium|Low>",
                 "evidence_summary": "<150-200 words for a general reader. What does the evidence show for this climate-governance pillar? Strengths and concerns. Plain language.>",
                 "four_layer_evidence": {{
@@ -293,7 +293,7 @@ class VCPPromptTemplates:
                     }}
                 ],
                 "temporal_scope": "<50-100 words. Evidence timeframe; prior COP baselines and recent turning points.>",
-                "distortion_screening": "<50-100 words. What was tested. Result: Clean, Suspect, or Unknown.>",
+                "distortion_screening": "<50-100 words. What was tested. Result: Clean, Suspect, or Indeterminate.>",
                 "relational_integrity": "<50-100 words. How this pillar interacts with 3-5 other climate-governance pillars. 3-4 sentences.>",
                 "stress_simulation": {{
                     "geopolitical_shock": "<5-100 words. Hold under negotiation breakdown or geopolitical fracture?>",
@@ -346,7 +346,7 @@ class VCPPromptTemplates:
         Step 2:  Establish temporal scope (prefer last 12 months; prior COP baselines).
         Step 3:  Collect four-layer evidence at program scale.
         Step 4:  Screen for program-level distortion (announcements vs delivery).
-        Step 5:  Identify cross-pillar patterns across the 21 governance pillars.
+        Step 5:  Identify cross-pillar patterns across the  governance pillars.
         Step 6:  Apply relational integrity test (ambition–finance–implementation coherence).
         Step 7:  Run program-scale stress simulation (geopolitical, finance, legitimacy).
         Step 8:  Test inclusion and Party-group equity.
@@ -357,10 +357,9 @@ class VCPPromptTemplates:
         Step 13: Assess trajectory — advancing, stagnating, or regressing.
 
         OUTPUT: Return ONLY valid JSON (no markdown, no extra text):
-        {{
-        
-            "ai_score": <0|25|50|75|100|"N/A"|"Unknown">,
-            "ai_progress": <0.00-100.00 or null if Unknown>,
+        {{        
+            "ai_score": <-4|-3|-2|-1|0|1|2|3|4|null>,
+            "ai_progress": <0.00-100.00 or null if Indeterminate>,
             "confidence_level": "<High|Medium|Low>",
             "executive_summary": "<500-700 words, ASCII only. Flowing prose — no section headers, no bullet points. Four sections in order: Program Overview, System Diagnosis, Strategic Strengths, Structural Risks.>",
             "four_layer_evidence": {{
@@ -370,7 +369,7 @@ class VCPPromptTemplates:
                 "perception": "<20-150 words. Key perception evidence — public trust, legitimacy, observer assessments.>"
             }},
             "temporal_scope": "<20-150 words. Evidence timeframe; prior COP baselines and recent turning points.>",
-            "distortion_screening": "<20-150 words. Program-level distortion assessment. Result: Clean, Suspect, or Unknown.>",
+            "distortion_screening": "<20-150 words. Program-level distortion assessment. Result: Clean, Suspect, or Indeterminate.>",
             "stress_simulation": {{
                 "geopolitical_shock": "<20-150 words. Hold under negotiation breakdown or geopolitical fracture?>",
                 "finance_shock": "<20-150 words. Hold under finance withdrawal or major pledge default?>",

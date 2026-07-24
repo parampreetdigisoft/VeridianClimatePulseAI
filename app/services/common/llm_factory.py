@@ -123,7 +123,7 @@ class LLMFactory:
             provider_instance = provider_class()
             return provider_instance.get_model_name()
         
-        return "Unknown"
+        return "Indeterminate"
 
 
 

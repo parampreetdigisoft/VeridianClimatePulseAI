@@ -360,16 +360,16 @@ def _require_fields(data: Dict, fields: list[str]) -> None:
 def _validate_ai_score(data: Dict) -> None:
     score = data.get("ai_score")
     if isinstance(score, (int, float)):
-        if not (0 <= float(score) <= 100):
+        if not (-4 <= float(score) <= 4):
             raise ValueError(f"ai_score {score} is outside the valid range 0-4.")
-    elif score not in ("N/A", "Unknown",None):
+    elif score not in ("N/A", "Indeterminate",None):
         raise ValueError(
-            f"ai_score must be a number 0-100, 'N/A', or 'Unknown'. Got: {score!r}"
+            f"ai_score must be a number 0-100, 'N/A', or 'Indeterminate'. Got: {score!r}"
         )
 
 
 def _validate_confidence(data: Dict) -> None:
-    valid = {"High", "Medium", "Low"}
+    valid = {"High", "Medium", "Low","N/A", "Indeterminate"}
     if data.get("confidence_level") not in valid:
         logger.warning(
             "Invalid confidence_level '%s'. Defaulting to 'Medium'.",

@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 _QUESTION_USER_TMPL = """
     Program: {program_name}
+    program_description: {program_description}
     Location: {location}
     Pillar: {pillar_name}
     Question: {question_text}
@@ -37,6 +38,7 @@ _QUESTION_USER_TMPL = """
 
 _PILLAR_USER_TMPL = """
     Program: {program_name}
+    program_description: {program_description}
     Location: {location}
     Pillar: {pillar_name}
     Year: {year}
@@ -46,6 +48,7 @@ _PILLAR_USER_TMPL = """
 
 _COUNTRY_USER_TMPL = """
     Program: {program_name}
+    program_description: {program_description}
     Location: {location}
     Year: {year}
 """
@@ -71,6 +74,7 @@ class VCPResearchService:
     async def research_and_score_question(
         self,
         program_name: str,
+        program_description: str,
         location: str,
         pillarID: int,
         pillar_name: str,
@@ -90,6 +94,7 @@ class VCPResearchService:
                 user_template=_QUESTION_USER_TMPL,
                 variables={
                     "program_name": program_name,
+                    "program_description": {program_description},
                     "location": location,
                     "pillar_name": pillar_name,
                     "question_text": question_text,
@@ -109,6 +114,7 @@ class VCPResearchService:
     async def research_and_score_pillar(
         self,
         program_name: str,
+        program_description: str,
         location: str,
         pillarId: int,
         pillar_name: str,
@@ -127,6 +133,7 @@ class VCPResearchService:
                 user_template=_PILLAR_USER_TMPL,
                 variables={
                     "program_name": program_name,
+                    "program_description": {program_description},
                     "location": location,
                     "pillar_name": pillar_name,
                     "year": year
@@ -145,6 +152,7 @@ class VCPResearchService:
     async def research_and_score_program(
         self,
         program_name: str,
+        program_description: str,
         location: str,
         year: int = None,
     ) -> Dict[str, Any]:
@@ -166,6 +174,7 @@ class VCPResearchService:
                 user_template=_COUNTRY_USER_TMPL,
                 variables={
                     "program_name": program_name,
+                    "program_description": program_description,
                     "location": location,
                     "year": year,
                 },
@@ -184,6 +193,7 @@ class VCPResearchService:
     async def immediate_situation(
         self,
         program_name: str,
+        program_description: str,
         location: str,
         ai_program_context: str,
         documentContext: Optional[str],
@@ -215,6 +225,7 @@ class VCPResearchService:
                 user_template=_COUNTRY_USER_TMPL,
                 variables={
                     "program_name": program_name,
+                    "program_description": {program_description},
                     "location": location,
                     "year": year,
                 },

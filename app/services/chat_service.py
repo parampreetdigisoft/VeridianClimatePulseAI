@@ -110,7 +110,7 @@ class ChatService:
 
         if len(programIDs) > 0:
             query = f"""
-                SELECT ProgramName, Location
+                SELECT ProgramName, Description, Year, Location
                 FROM ClimatePrograms
                 WHERE ClimateProgramID IN ({",".join(map(str, programIDs))})
             """
@@ -192,7 +192,7 @@ class ChatService:
             data = ai_result["data"]
 
             result = {
-                "programId": program_id,
+                "climateProgramID": program_id,
                 "programName": data.get("programName"),
 
                 "recentPerformance": {

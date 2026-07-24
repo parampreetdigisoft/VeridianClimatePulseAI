@@ -107,7 +107,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         extra={
             "method": request.method,
             "url": str(request.url),
-            "client": request.client.host if request.client else "unknown",
+            "client": request.client.host if request.client else "Indeterminate",
         },
     )
     return JSONResponse(

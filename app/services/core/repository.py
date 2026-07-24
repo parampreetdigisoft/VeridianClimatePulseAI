@@ -260,15 +260,15 @@ class DatabaseRepository:
     async def get_active_programs(self) -> List[Dict[str, Any]]:
         """Active programs for GDELT scope and emerging-trends context."""
         query = """
-            SELECT ProgramName, Region, ProgramCode
+            SELECT ProgramName, Description, Year, Location
             FROM ClimatePrograms
             WHERE IsDeleted = 0
-            ORDER BY Region, ProgramName
+            ORDER BY ProgramName
         """
         return await self.engine.fetch_dicts_async(query)
 
     async def get_ai_program_context(
-    self,
+        self,
         program_id: int,
         year: int,
         pillar_id: Optional[int] = None,
@@ -276,8 +276,9 @@ class DatabaseRepository:
 
         query = """
             SELECT 
-                a.AIProgress as AfricaHealthScore,
+                a.AIProgress as ClimateProgramScore,
                 c.ProgramName,
+                c.Description,
                 c.Location,
                 a.EvidenceSummary,
                 a.StructuralEvidence,
@@ -287,12 +288,11 @@ class DatabaseRepository:
                 a.StrategicRecommendation,
                 p.PillarName
             FROM AIProgramScores a
-            JOIN Programs c 
+            JOIN ClimatePrograms c 
                 ON a.ClimateProgramID = c.ClimateProgramID 
                 AND c.IsDeleted = 0
             left join pillars p on p.PillarID=?
             WHERE a.ClimateProgramID = ?
-            AND a.Year = ?
         """
 
         params = (pillar_id,program_id, year)
@@ -300,7 +300,7 @@ class DatabaseRepository:
         result = await self.engine.fetch_dicts_async(query, params)
 
         return result[0] if result else None
-        
+
     async def save_immediate_situation_summary(
         self,
         program_id: int,
@@ -341,7 +341,7 @@ class DatabaseRepository:
             year
         )
 
-        await self.engine.execute_write_async(query, params)
+        await self.engine.execute_write_async(query, params)        
 
 
     async def get_FAQ_context(self, isglobal: bool = False) -> List[Dict]:

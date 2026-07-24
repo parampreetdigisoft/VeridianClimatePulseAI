@@ -5,6 +5,8 @@ Pillars are loaded dynamically from the database — not hardcoded.
 """
 
 from typing import Dict, List, Mapping, Optional, Union
+from bs4 import BeautifulSoup
+import html
 
 _PILLAR_FEED_JSON_RULES = """
         Return ONLY valid JSON.
@@ -84,8 +86,8 @@ class VCPPPillarPrompts:
         - High (≈90–100%): multiple consistent high-authority Stage 1/2 sources
         - Medium (≈70–89%): consistent evidence but limited sources or medium authority
         - Low (≈50–69%): single source, indirect evidence, or Stage 1↔2 contradiction
-        - Unknown / Indeterminate (<50% or severely contradictory / missing evidence):
-          set ai_score to null/"Unknown"/"N/A" as rules allow; document opacity_risk
+        - Indeterminate / Indeterminate (<50% or severely contradictory / missing evidence):
+          set ai_score to null/"Indeterminate"/"N/A" as rules allow; document opacity_risk
 
         What AI MUST NOT do:
         - Invent evidence, URLs, case counts, pledge amounts, or document titles
@@ -112,7 +114,7 @@ class VCPPPillarPrompts:
         scoring when evidence is mixed. Treat performative announcements without
         implementation milestones as weak progress, not strong progress.
         Score options are provided per question (typically 0|25|50|75|100 or null).
-        Pillar/program scores use the same discrete grid or N/A|Unknown.
+        Pillar/program scores use the same discrete grid or N/A|Indeterminate.
 
         Conceptual bipolar anchors (for reasoning, not free-form inventing scores):
          +4 / 100 — Transformational, binding implementation with verified delivery
@@ -121,12 +123,12 @@ class VCPPPillarPrompts:
          -2 / 25  — Weak, regressive signals, or serious implementation failure
          -4 / 0   — Active regression, suppression of evidence, or destabilizing failure
          N/A      — Structurally irrelevant to this program/pillar
-         Unknown  — Insufficient verifiable data (opacity risk — do NOT treat as success)
+         Indeterminate  — Insufficient verifiable data (opacity risk — do NOT treat as success)
 
         -----------------------------------------------------------------------------
         DATA SILENCE & QUALITY ASSURANCE
         -----------------------------------------------------------------------------
-        - Assign Unknown / null when data cannot be verified; state the cause
+        - Assign Indeterminate / null when data cannot be verified; state the cause
           (suppression, incapacity, missing systems, paywall, not yet published)
         - If evidence appears systematically unavailable, flag opacity_risk /
           red_flag with “Evidence suppression suspected” when warranted
@@ -173,7 +175,11 @@ class VCPPPillarPrompts:
     @classmethod
     def format_pillar_context(cls, pillar_name: str, description: Optional[str] = None) -> str:
         """Build pillar context from database name and description."""
-        desc = (description or "").strip() or "No description provided for this pillar."
+
+        text = BeautifulSoup(description, "html.parser").get_text(separator=" ", strip=True)
+        text = html.unescape(text).replace("\xa0", " ")
+
+        desc = (text or "").strip() or "No description provided for this pillar."
         return (
             f"PILLAR: {pillar_name}\n\n"
             f"DESCRIPTION:\n{desc}\n\n"

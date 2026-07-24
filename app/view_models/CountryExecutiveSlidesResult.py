@@ -29,7 +29,7 @@ class EarlyWarningItem(BaseModel):
 
 
 class ProgramExecutiveSlidesResult(BaseModel):
-    programId: int
+    climateProgramID: int
     programName: str
 
     dailyPerformance: PerformanceSummary

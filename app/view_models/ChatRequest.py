@@ -28,7 +28,7 @@ class ChatCrossComparisionRequest(BaseModel):
 
 
 class ChatProgramExecutiveSlidesRequest(BaseModel):
-    programId: int
+    climateProgramID: int
 
 class ChatProgramExecutiveSlidesResponse(BaseModel):
     success: bool

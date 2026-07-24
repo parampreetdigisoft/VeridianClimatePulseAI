@@ -128,7 +128,7 @@ async def ask_Program_executive_slides(request: ChatProgramExecutiveSlidesReques
     try:
 
         response = await chat_service.answer_Program_executive_slides(
-            program_id=request.programId
+            program_id=request.climateProgramID
         )
 
         return ChatProgramExecutiveSlidesResponse(

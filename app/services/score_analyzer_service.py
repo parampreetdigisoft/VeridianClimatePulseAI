@@ -99,7 +99,7 @@ class ScoreAnalyzerService:
             else "WHERE IsDeleted = 0"
         )
         return await self._db.engine.fetch_df_async(
-            f"SELECT ClimateProgramID, ProgramName, Location FROM ClimatePrograms {where}"
+            f"SELECT ClimateProgramID, ProgramName, Description, Year, Location FROM ClimatePrograms {where}"
         )
 
     @staticmethod
@@ -233,10 +233,12 @@ class ScoreAnalyzerService:
                 try:
                     ai_data = await self._ai.research_and_score_question(
                         program_name=program.ProgramName,
+                        program_description = program.Description,
                         location=self._continent_label(program),
                         pillarID=row.PillarID,
                         pillar_name=row.PillarName,
                         question_text=row.QuestionText,
+                        year=program.Year
                     )
                     if not ai_data.get("success"):
                         logger.warning(
@@ -248,10 +250,9 @@ class ScoreAnalyzerService:
 
                     normalized = self._safe_normalized(0)
                     batch.append(self._build_question_record(row, ai_data, normalized))
-                    batch = await self._flushQuestion(
+                    batch = await self._flushQuestion (
                         program.ClimateProgramID, batch ,self._db.bulk_upsert_question_evaluations
                     )
-
                 except Exception as exc:
                     logger.error(
                         "Question %d, program %d: %s",
@@ -274,7 +275,7 @@ class ScoreAnalyzerService:
         pillar_id: Optional[int] = None,
     ) -> bool:
         """Score every pillar for a program."""
-        where = f"programId = {program.ClimateProgramID}"
+        where = f"climateProgramID = {program.ClimateProgramID}"
         if pillar_id is not None:
             where += f" AND PillarID = {pillar_id}"
 
@@ -290,9 +291,11 @@ class ScoreAnalyzerService:
             try:
                 ai_data = await self._ai.research_and_score_pillar(
                     program_name=program.ProgramName,
+                    program_description = program.Description,
                     location=self._continent_label(program),
                     pillarId=row.PillarID,
-                    pillar_name=row.PillarName
+                    pillar_name=row.PillarName,
+                    year=program.Year
                 )
                 if not ai_data.get("success"):
                     continue
@@ -314,16 +317,23 @@ class ScoreAnalyzerService:
                     exc,
                     exc_info=True,
                 )
-
-        await self._flush_pillar(pillar_batch, source_batch, force=True)
-        await self._db.AiRecalculateProgramScore(program.ClimateProgramID)
+        try:             
+            await self._flush_pillar(pillar_batch, source_batch, force=True)
+            await self._db.AiRecalculateProgramScore(program.ClimateProgramID)
+        except Exception as exc:
+            logger.error(
+                "Pillar %d, program %d: %s",
+                program.ClimateProgramID,
+                exc,
+                exc_info=True,
+            )
         
         return True
 
     async def _analyze_program(self, program: Any, **_) -> bool:
         """Score the overall program-level Healthassessment."""
         df = await self._db.get_view_data(
-            "vw_AiProgramEvaluations", f"programId = {program.ClimateProgramID}"
+            "vw_AiProgramEvaluations", f"climateProgramID = {program.ClimateProgramID}"
         )
         if df.empty:
             logger.info("No program evaluations found: program %d", program.ClimateProgramID)
@@ -335,7 +345,9 @@ class ScoreAnalyzerService:
             try:
                 ai_data = await self._ai.research_and_score_program(
                     program_name=program.ProgramName,
+                    program_description = program.Description,
                     location=self._continent_label(program),
+                    year=program.Year
                 )
                 if not ai_data.get("success"):
                     continue
@@ -366,6 +378,7 @@ class ScoreAnalyzerService:
 
         ai_program= await self._db.get_ai_program_context(program_id, year)
         program_Name = ai_program["ProgramName"]
+        description = ai_program["Description"]
         location =ai_program["Location"]
 
         question = f"""
@@ -381,6 +394,7 @@ class ScoreAnalyzerService:
 
         ai_data = await self._ai.immediate_situation(
                     program_name=program_Name,
+                    program_description=description,
                     location =location,
                     ai_program_context=ai_program_context,
                     documentContext=document_context,
@@ -443,7 +457,7 @@ class ScoreAnalyzerService:
 
     def _build_pillar_record(self, row: Any, ai: dict, program_id: int) -> dict:
         ai_progress = self._to_float(ai.get("AIProgress") or 0)
-        evaluator_score = self._to_float(row.EvaluatorScore)
+        evaluator_score = self._to_float(0)
 
         return {
             "ClimateProgramID": program_id,
@@ -487,7 +501,7 @@ class ScoreAnalyzerService:
             "AIProgress": ai_progress,
             "EvaluatorScore": evaluator_score,
             "Discrepancy": self._discrepancy(ai_progress, evaluator_score),
-            "ConfidenceLevel": ai.get("ConfidenceLevel", "Unknown"),
+            "ConfidenceLevel": ai.get("ConfidenceLevel", "Indeterminate"),
             "EvidenceSummary": ai.get("ExecutiveSummary"),
             "StructuralEvidence": ai.get("StructuralEvidence"),
             "OperationalEvidence": ai.get("OperationalEvidence"),
@@ -531,13 +545,13 @@ class ScoreAnalyzerService:
         ]
 
 
-    def _build_immediateSituation_record(self, programId: int, ai: dict) -> dict:
+    def _build_immediateSituation_record(self, climateProgramID: int, ai: dict) -> dict:
         summary = ai.get("executive_summary", "")
 
         return {
-            "ClimateProgramID": programId,
-            "immediateSituationSummary": ai.get("immediateSituationSummary", "Unknown"),
-            "key_developments": ai.get("key_developments", "Unknown"),
+            "ClimateProgramID": climateProgramID,
+            "immediateSituationSummary": ai.get("immediateSituationSummary", "Indeterminate"),
+            "key_developments": ai.get("key_developments", "Indeterminate"),
             "critical_risks": ai.get("critical_risks"),
             "gaps": ai.get("gaps"),
             "executive_summary": summary if isinstance(summary, str) and len(summary) > 50 else ""
