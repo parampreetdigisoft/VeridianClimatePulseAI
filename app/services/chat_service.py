@@ -44,9 +44,8 @@ class ChatService:
         faqid : Optional[int] = None,
         pillar_id: Optional[int] = None,
     ) -> str:
-        year = datetime.now().year      
-
-        ai_program_context = await self._db.get_ai_program_context(program_id, year,pillar_id)
+        
+        ai_program_context = await self._db.get_ai_program_context(program_id, pillar_id)
 
         if faqid is None :
             faqs = await self._db.get_FAQ_context()
@@ -156,9 +155,8 @@ class ChatService:
 
     async def answer_Program_executive_slides( self, program_id: int) -> Dict[str, Any]:
         try:
-            year = datetime.now().year
 
-            ai_program = await self._db.get_ai_program_context(program_id, year)
+            ai_program = await self._db.get_ai_program_context(program_id)
 
             if not ai_program:
                 return {

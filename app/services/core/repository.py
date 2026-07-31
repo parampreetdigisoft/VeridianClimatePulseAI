@@ -270,7 +270,6 @@ class DatabaseRepository:
     async def get_ai_program_context(
         self,
         program_id: int,
-        year: int,
         pillar_id: Optional[int] = None,
     ) -> Dict[str, Any]:
 
@@ -280,6 +279,7 @@ class DatabaseRepository:
                 c.ProgramName,
                 c.Description,
                 c.Location,
+                c.Year,
                 a.EvidenceSummary,
                 a.StructuralEvidence,
                 a.OutcomeEvidence,
@@ -295,7 +295,7 @@ class DatabaseRepository:
             WHERE a.ClimateProgramID = ?
         """
 
-        params = (pillar_id,program_id, year)
+        params = (pillar_id,program_id)
 
         result = await self.engine.fetch_dicts_async(query, params)
 
@@ -304,7 +304,6 @@ class DatabaseRepository:
     async def save_immediate_situation_summary(
         self,
         program_id: int,
-        year: int,
         record: dict
     ) -> None:
 
@@ -314,31 +313,25 @@ class DatabaseRepository:
         query = """
             UPDATE AIProgramScores
             SET 
-                ImmediateSituationSummary = ?,
-                KeyDevelopments = ?,
-                CriticalRisks = ?,
-                Gaps = ?,
+                KeyFindings = ?,
+                Recommendations = ?,
                 EvidenceSummary = CASE 
                     WHEN ? IS NOT NULL AND LTRIM(RTRIM(CAST(? AS NVARCHAR(MAX)))) <> '' 
                     THEN ? 
                     ELSE EvidenceSummary 
                 END
             WHERE ClimateProgramID = ?
-            AND Year = ?
         """
 
         exec_summary = record.get("executive_summary")
 
         params = (
-            record.get("immediateSituationSummary"),
-            record.get("key_developments"),
-            record.get("critical_risks"),
-            record.get("gaps"),
+            record.get("key_findings"),
+            record.get("recommendations"),
             exec_summary,   # check NULL
             exec_summary,   # check empty
             exec_summary,   # value to update
-            program_id,
-            year
+            program_id
         )
 
         await self.engine.execute_write_async(query, params)        

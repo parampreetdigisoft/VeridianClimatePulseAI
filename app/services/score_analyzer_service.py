@@ -367,19 +367,20 @@ class ScoreAnalyzerService:
 
         await self._flush(batch, self._db.bulk_upsert_program_evaluations, force=True)
 
-        await self.immediateSituation(program.ClimateProgramID)
+        # No immediate summery for program
+        #await self.immediateSituation(program.ClimateProgramID)
         await self._db.AiRecalculateProgramScore(program.ClimateProgramID)
         
         return True
 
     async def immediateSituation(self, program_id: int, **_) -> bool:
         """Score the overall program-level Healthassessment."""
-        year = datetime.now().year        
 
-        ai_program= await self._db.get_ai_program_context(program_id, year)
+        ai_program= await self._db.get_ai_program_context(program_id)
         program_Name = ai_program["ProgramName"]
         description = ai_program["Description"]
         location =ai_program["Location"]
+        year =ai_program["Year"]
 
         question = f"""
         What are the most critical recent developments, emerging risks, structural weaknesses, and key strengths across all major sectors in {program_Name}? Include insights on governance, security, economy, social cohesion, infrastructure, and institutional effectiveness. Focus on cross-pillar patterns and high-impact information relevant for executive-level program assessment and situational awareness.
@@ -402,14 +403,11 @@ class ScoreAnalyzerService:
                 )
 
         result = self._build_immediateSituation_record(program_id, ai_data)
-        
-        await self._db.save_immediate_situation_summary(program_id,year,result)
-        
-        
+        await self._db.save_immediate_situation_summary(program_id, result)
         return True
 
     # ------------------------------------------------------------------ #
-    #  Record builders                                                   #
+    #  Record builders                                                   #  
     # ------------------------------------------------------------------ #
 
     def _build_question_record(
@@ -550,10 +548,8 @@ class ScoreAnalyzerService:
 
         return {
             "ClimateProgramID": climateProgramID,
-            "immediateSituationSummary": ai.get("immediateSituationSummary", "Indeterminate"),
-            "key_developments": ai.get("key_developments", "Indeterminate"),
-            "critical_risks": ai.get("critical_risks"),
-            "gaps": ai.get("gaps"),
+            "key_findings": ai.get("key_findings") or "",
+            "recommendations": ai.get("recommendations") or "",
             "executive_summary": summary if isinstance(summary, str) and len(summary) > 50 else ""
         }
 

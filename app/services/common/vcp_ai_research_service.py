@@ -27,30 +27,28 @@ logger = logging.getLogger(__name__)
 
 _QUESTION_USER_TMPL = """
     Program: {program_name}
+    Program_Year: {year}
     program_description: {program_description}
     Location: {location}
     Pillar: {pillar_name}
     Question: {question_text}
-    Year: {year}
-
     Return ONLY valid JSON.
 """
 
 _PILLAR_USER_TMPL = """
     Program: {program_name}
+    Program_Year: {year}
     program_description: {program_description}
     Location: {location}
     Pillar: {pillar_name}
-    Year: {year}
-
     Return ONLY valid JSON.
 """
 
 _COUNTRY_USER_TMPL = """
     Program: {program_name}
+    Program_Year: {year}
     program_description: {program_description}
     Location: {location}
-    Year: {year}
 """
 
 
@@ -88,17 +86,17 @@ class VCPResearchService:
             pillar_context = VCPPPillarPrompts.get_pillar_context(pillarID, pillars)
             system_prompt = VCPPromptTemplates.question_system_prompt(pillar_context)
 
-            label = f"question|{program_name}|pillar{pillarID}"
+            label = f"question|{program_name}|pillar"
             raw = await self._llm_svc.invoke_chain(
                 system_prompt=system_prompt,
                 user_template=_QUESTION_USER_TMPL,
                 variables={
                     "program_name": program_name,
+                    "year": year,
                     "program_description": {program_description},
                     "location": location,
                     "pillar_name": pillar_name,
                     "question_text": question_text,
-                    "year": year,
                 },
                 label=label,
             )
@@ -133,10 +131,10 @@ class VCPResearchService:
                 user_template=_PILLAR_USER_TMPL,
                 variables={
                     "program_name": program_name,
+                    "year": year,
                     "program_description": {program_description},
                     "location": location,
                     "pillar_name": pillar_name,
-                    "year": year
                 },
                 label=label,
             )
@@ -174,9 +172,9 @@ class VCPResearchService:
                 user_template=_COUNTRY_USER_TMPL,
                 variables={
                     "program_name": program_name,
+                    "year": year,
                     "program_description": program_description,
                     "location": location,
-                    "year": year,
                 },
                 label=label,
             )
@@ -225,9 +223,9 @@ class VCPResearchService:
                 user_template=_COUNTRY_USER_TMPL,
                 variables={
                     "program_name": program_name,
+                    "year": year,
                     "program_description": {program_description},
                     "location": location,
-                    "year": year,
                 },
                 label=label,
             )

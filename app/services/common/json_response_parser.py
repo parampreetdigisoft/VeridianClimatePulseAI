@@ -337,14 +337,27 @@ def map_program_response(
         "PrimarySource": analysis.get("primary_source"),
     }
 def build_immediateSituation_record(ai: dict) -> Dict[str, Any]:
+    """Map key findings / recommendations (and optional executive summary) from LLM JSON."""
+    # Backward-compatible: older responses nested under immediateSituation
     immediate = ai.get("immediateSituation", {}) or {}
 
+    key_findings = (
+        ai.get("key_findings")
+        or immediate.get("key_findings")
+        or immediate.get("key_developments")
+        or ""
+    )
+    recommendations = (
+        ai.get("recommendations")
+        or immediate.get("recommendations")
+        or immediate.get("critical_risks")
+        or ""
+    )
+
     return {
-        "immediateSituationSummary": immediate.get("summary", ""),
-        "key_developments": immediate.get("key_developments", ""),
-        "critical_risks": immediate.get("critical_risks", ""),
-        "gaps": immediate.get("gaps", ""),
-        "executive_summary": ai.get("executive_summary", "")
+        "key_findings": key_findings,
+        "recommendations": recommendations,
+        "executive_summary": ai.get("executive_summary", "") or immediate.get("summary", ""),
     }
 
 # ====================================================================== #

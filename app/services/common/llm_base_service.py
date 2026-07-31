@@ -56,7 +56,7 @@ class LLMBaseService:
         self._initialized = False
 
     # ------------------------------------------------------------------ #
-    #  Initialisation                                                      #
+    #  Initialisation                                                    #
     # ------------------------------------------------------------------ #
 
     async def initialize(self) -> None:
