@@ -153,7 +153,7 @@ async def ask_Program_executive_slides(request: ChatProgramExecutiveSlidesReques
 @router.get(
     "/emerging-trends-and-issues",
     response_model=ChatEmergingTrendsResponse,
-    summary="Africa health emerging trends and risks feed",
+    summary="Climate emerging trends and risks feed",
 )
 async def get_emerging_trends_and_issues(
     programCount: int = Query(
@@ -166,16 +166,17 @@ async def get_emerging_trends_and_issues(
         default=None,
         ge=0,
         description=(
-            "GDELT health keyword variant index (0–7). Omit to auto-rotate every 5 minutes. "
-            "Each variant uses different Africa-scoped health risk keywords."
+            "GDELT climate keyword variant index (0–7). Omit to auto-rotate every 5 minutes. "
+            "Each variant uses different climate keywords."
         ),
     ),
 ):
     """
-    Public homepage feed for emerging African health risks and trends.
+    Public homepage feed for emerging global climate risks and trends.
 
-    Fetches GDELT articles (last 24h) filtered for Africa and health-related topics,
-    then returns structured program cards for the Health Intelligence UI.
+    Fetches GDELT articles (last 7 days) filtered for climate-related topics across
+    Veridian Climate Pulse's tracked programs, then returns structured program cards
+    for the Climate Intelligence UI.
     """
     try:
         response = await chat_service.get_emerging_trends_and_issues(
@@ -204,8 +205,7 @@ async def get_emerging_trends_and_issues(
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail=str(e))
-
-
+    
 @router.get(
     "/pillar-live-signals",
     response_model=ChatPillarLiveSignalsResponse,

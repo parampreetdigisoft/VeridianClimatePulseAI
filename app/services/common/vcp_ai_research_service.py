@@ -93,7 +93,7 @@ class VCPResearchService:
                 variables={
                     "program_name": program_name,
                     "year": year,
-                    "program_description": {program_description},
+                    "program_description": program_description,
                     "location": location,
                     "pillar_name": pillar_name,
                     "question_text": question_text,
@@ -224,7 +224,7 @@ class VCPResearchService:
                 variables={
                     "program_name": program_name,
                     "year": year,
-                    "program_description": {program_description},
+                    "program_description": program_description,
                     "location": location,
                 },
                 label=label,

@@ -368,7 +368,7 @@ class ScoreAnalyzerService:
         await self._flush(batch, self._db.bulk_upsert_program_evaluations, force=True)
 
         # No immediate summery for program
-        #await self.immediateSituation(program.ClimateProgramID)
+        await self.immediateSituation(program.ClimateProgramID)
         await self._db.AiRecalculateProgramScore(program.ClimateProgramID)
         
         return True
