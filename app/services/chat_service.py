@@ -45,7 +45,7 @@ class ChatService:
         pillar_id: Optional[int] = None,
     ) -> str:
         
-        ai_program_context = await self._db.get_ai_program_context(program_id, pillar_id)
+        ai_program_context = await self._db.get_ai_program_context(program_id, pillar_id) or {}
 
         if faqid is None :
             faqs = await self._db.get_FAQ_context()
@@ -60,9 +60,9 @@ class ChatService:
             ai_context = await self._db.GetLocalContextDataForLLM([faqid],program_id,pillar_id)
             
         if len(ai_context) < 1:
-            ai_context = "\n".join(f"{key}: {value}" for key, value in ai_program_context.items())
-        pillar_name =ai_program_context["PillarName"]
-        programName =ai_program_context["ProgramName"]
+            ai_context = "\n".join(f"{key}: {value}" for key, value in (ai_program_context or {}).items())
+        pillar_name = (ai_program_context or {}).get("PillarName", "")
+        programName = (ai_program_context or {}).get("ProgramName", "")
 
         answer = await rag_query_service.send_question_to_llm(questionText,ai_context,programName,pillar_name,historyText)
 
@@ -530,7 +530,7 @@ class ChatService:
             "subHeadline": str(
                 data.get(
                     "subHeadline",
-                    "African health intelligence pillar watch from the last 48 hours.",
+                    "Veridian Climate Pulse pillar watch from the last 48 hours.",
                 )
             ).strip(),
             "pillars": pillars,

@@ -67,9 +67,9 @@ async def analyze_missing_pillar_questions(request: MissingPillarQuestionRequest
 
         asyncio.create_task(
             run_analysis_task(
-                f"analyze_missing_pillar_questions_{request.programID}",
+                f"analyze_missing_pillar_questions_{request.climateProgramID}",
                 score_analyzer_service.import_missing_program_questions(
-                    program_id=request.programID,
+                    program_id=request.climateProgramID,
                     pillar_id=request.pillarID
                 )
             )

@@ -27,7 +27,7 @@ async def ask(request: ChatRequest):
     """
     try:
         result = await chat_service.answer_program_question (
-            program_id = request.programID,
+            program_id = request.climateProgramID,
             question = request.questionText,
             pillar_id = request.pillarID 
         )
@@ -52,7 +52,7 @@ async def ask(request: ChatProgramRequest):
     """
     try:
         result = await chat_service.answer_program_question (
-            program_id = request.programID,
+            program_id = request.climateProgramID,
             questionText = request.questionText,
             historyText = request.historyText,
             faqid = request.faqid,

@@ -49,24 +49,24 @@ class DatabaseRepository:
     # score and Kpi recalculation
     # ------------------------------------------------------------------
 
-    async def AiRecalculateProgramScore(self, programID: int) -> None:
+    async def AiRecalculateProgramScore(self, climateProgramID: int) -> None:
 
         await self.engine.execute_sp_async(
             "EXEC sp_AiRecalculateProgramScore @ClimateProgramID = ?",
-            (programID,),
+            (climateProgramID,),
         )
 
-    async def AiInsertAnalyticalLayerResults(self, programID: int) -> None:
+    async def AiInsertAnalyticalLayerResults(self, climateProgramID: int) -> None:
 
         await self.engine.execute_sp_async(
             "EXEC sp_AiInsertAnalyticalLayerResults @ClimateProgramID = ?",
-            (programID,),
+            (climateProgramID,),
         )
     # ------------------------------------------------------------------
     # Question evaluations
     # ------------------------------------------------------------------
 
-    async def bulk_upsert_question_evaluations(self, rows: List[Dict], programID:int) -> None:
+    async def bulk_upsert_question_evaluations(self, rows: List[Dict], climateProgramID:int) -> None:
         if not rows:
             return
 
@@ -92,7 +92,7 @@ class DatabaseRepository:
             (records,),
         )
 
-        await self.AiRecalculateProgramScore(programID)
+        await self.AiRecalculateProgramScore(climateProgramID)
 
     # ------------------------------------------------------------------
     # Pillar evaluations
@@ -275,7 +275,7 @@ class DatabaseRepository:
 
         query = """
             SELECT 
-                a.AIProgress as ClimateProgramScore,
+                ISNULL(a.AIProgress, 0) as ClimateProgramScore,
                 c.ProgramName,
                 c.Description,
                 c.Location,
@@ -287,15 +287,15 @@ class DatabaseRepository:
                 a.CrossPillarPatterns,
                 a.StrategicRecommendation,
                 p.PillarName
-            FROM AIProgramScores a
-            JOIN ClimatePrograms c 
-                ON a.ClimateProgramID = c.ClimateProgramID 
-                AND c.IsDeleted = 0
+            FROM ClimatePrograms c
+            LEFT JOIN AIProgramScores a 
+                ON a.ClimateProgramID = c.ClimateProgramID
             left join pillars p on p.PillarID=?
-            WHERE a.ClimateProgramID = ?
+            WHERE c.ClimateProgramID = ?
+                AND c.IsDeleted = 0
         """
 
-        params = (pillar_id,program_id)
+        params = (pillar_id, program_id)
 
         result = await self.engine.fetch_dicts_async(query, params)
 

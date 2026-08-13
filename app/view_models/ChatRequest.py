@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Any, List, Optional, Dict
 
 class ChatRequest(BaseModel):
-    programID: int
+    climateProgramID: int
     questionText: str
     historyText: Optional[str] = None
     pillarID: Optional[int] = None
@@ -13,7 +13,7 @@ class ChatGlobalRequest(BaseModel):
     faqid: Optional[int] = None
 
 class ChatProgramRequest(BaseModel):
-    programID: int
+    climateProgramID: int
     questionText: str
     historyText: Optional[str] = None
     faqid: Optional[int] = None

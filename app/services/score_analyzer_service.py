@@ -200,10 +200,10 @@ class ScoreAnalyzerService:
         missing_only = False
     ) -> bool:
 
-        programID = int(program.ClimateProgramID)
+        climateProgramID = int(program.ClimateProgramID)
         year = datetime.now().year
 
-        where = f"ClimateProgramID = {programID}"
+        where = f"ClimateProgramID = {climateProgramID}"
 
         if pillar_id is not None:
             where += f" AND PillarID = {pillar_id}"
@@ -559,7 +559,7 @@ class ScoreAnalyzerService:
 
     async def _flushQuestion(
         self,
-        programID:int,
+        climateProgramID:int,
         batch: list[dict],
         upsert_fn,
         *,
@@ -570,7 +570,7 @@ class ScoreAnalyzerService:
         Returns an empty list after flushing, or the original list if not yet full.
         """
         if batch and (force or len(batch) >= _BATCH_SIZE):
-            await upsert_fn(batch,programID)
+            await upsert_fn(batch,climateProgramID)
             return []
         return batch
     

@@ -566,7 +566,7 @@ class RAGQueryService:
             system_prompt = VCPPPillarPrompts.pillar_live_signals_prompt(pillars)
 
             user_template = f"""
-            Generate the LIVE African VCPP pillar signals feed (all {pillar_count} active pillars).
+            Generate the LIVE VCP pillar signals feed (all {pillar_count} active pillars).
 
             Current UTC datetime (now):
             {{current_date}}

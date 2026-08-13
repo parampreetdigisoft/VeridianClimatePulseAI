@@ -1480,16 +1480,16 @@ class VCPPromptTemplates:
     """
 
     
-    # GDELT emerging-trends health keyword variants (rotate to diversify queries)
+    # GDELT emerging-trends climate keyword variants (rotate to diversify queries)
     GDELT_EMERGING_KEYWORD_VARIANTS: Tuple[Tuple[str, ...], ...] = (
-        ("outbreak", "epidemic", "disease"),
-        ("malaria", "cholera", "dengue"),
-        ("ebola", "mpox", "measles"),
-        ("tuberculosis", "HIV", "polio"),
-        ("malnutrition", "famine", "hunger"),
-        ("vaccination", "immunization", "vaccine"),
-        ("healthcare", "hospital", "clinic"),
-        ("pandemic", "public health", "health emergency"),
+        ("climate change", "global warming", "climate crisis"),
+        ("drought", "flood", "extreme weather"),
+        ("heatwave", "wildfire", "storm surge"),
+        ("carbon emissions", "greenhouse gas", "net zero"),
+        ("sea level rise", "coastal erosion", "glacier melt"),
+        ("renewable energy", "clean energy", "energy transition"),
+        ("deforestation", "biodiversity loss", "ecosystem collapse"),
+        ("climate finance", "climate adaptation", "climate resilience"),
     )
 
     @staticmethod
@@ -1499,26 +1499,26 @@ class VCPPromptTemplates:
         """
         Build GDELT source-program scope from Programs table rows.
 
-        Returns (all_program_codes, region_groups) where region_groups rotates
-        by African sub-region (West Africa, East Africa, etc.).
+        Returns (all_program_names, location_groups) where location_groups rotates
+        by program host location (e.g. Bonn, Germany / Marrakech, Morocco).
         """
-        all_codes: List[str] = []
-        by_region: Dict[str, List[str]] = {}
+        all_names: List[str] = []
+        by_location: Dict[str, List[str]] = {}
 
         for row in programs:
-            code = str(row.get("ProgramCode", "")).strip().upper()
-            if len(code) != 2:
+            name = str(row.get("ProgramName", "")).strip().upper()
+            if not name:
                 continue
-            all_codes.append(code)
-            region = str(row.get("Region", "") or "Africa").strip()
-            by_region.setdefault(region, []).append(code)
+            all_names.append(name)
+            location = str(row.get("Location", "")).strip()
+            by_location.setdefault(location, []).append(name)
 
-        region_groups = tuple(
-            tuple(codes)
-            for codes in by_region.values()
-            if codes
+        location_groups = tuple(
+            tuple(names)
+            for names in by_location.values()
+            if names
         )
-        return tuple(all_codes), region_groups
+        return tuple(all_names), location_groups
 
     @staticmethod
     def gdelt_emerging_variant_count() -> int:
@@ -1531,47 +1531,47 @@ class VCPPromptTemplates:
         return bucket % VCPPromptTemplates.gdelt_emerging_variant_count()
 
     @staticmethod
-    def _gdelt_africa_scope_clause(
+    def _gdelt_program_scope_clause(
         variant_index: int,
-        all_program_codes: Sequence[str],
-        region_groups: Sequence[Sequence[str]],
+        all_program_names: Sequence[str],
+        location_groups: Sequence[Sequence[str]],
     ) -> str:
-        """Build Africa geographic filter for GDELT from DB program codes."""
-        if region_groups:
-            group = region_groups[variant_index % len(region_groups)]
-        elif all_program_codes:
-            group = all_program_codes
+        """Build a global climate-program geographic filter for GDELT from DB program rows."""
+        if location_groups:
+            group = location_groups[variant_index % len(location_groups)]
+        elif all_program_names:
+            group = all_program_names
         else:
-            return "(africa OR african)"
+            return "(climate OR \"climate change\")"
 
-        programs = " OR ".join(f"sourceprogram:{code}" for code in group)
-        return f"({programs} OR africa OR african)"
+        programs = " OR ".join(f"sourceprogram:{name}" for name in group)
+        return f"({programs} OR climate OR \"climate change\")"
 
     @staticmethod
     def _gdelt_emerging_query_string(
         keywords: Sequence[str],
         variant_index: int,
-        all_program_codes: Sequence[str],
-        region_groups: Sequence[Sequence[str]],
+        all_program_names: Sequence[str],
+        location_groups: Sequence[Sequence[str]],
     ) -> str:
-        health_inner = " OR ".join(k.strip() for k in keywords if k and k.strip())
-        africa_inner = VCPPromptTemplates._gdelt_africa_scope_clause(
-            variant_index, all_program_codes, region_groups
+        climate_inner = " OR ".join(k.strip() for k in keywords if k and k.strip())
+        scope_inner = VCPPromptTemplates._gdelt_program_scope_clause(
+            variant_index, all_program_names, location_groups
         )
-        return f"({health_inner}) {africa_inner} sourcelang:english"
+        return f"({climate_inner}) {scope_inner} sourcelang:english"
 
     @staticmethod
     def emerging_trends_gdelt_url(
         max_records: int,
-        all_program_codes: Sequence[str],
-        region_groups: Sequence[Sequence[str]],
+        all_program_names: Sequence[str],
+        location_groups: Sequence[Sequence[str]],
         variant_index: Optional[int] = None,
     ) -> Tuple[str, int]:
         """
-        Build GDELT Doc API URL (last 24h, English, Africa health focus).
+        Build GDELT Doc API URL (last 7 days, English, Climate Pulse focus).
 
-        Returns (url, variant_index_used). Program codes come from the Programs
-        table; each variant rotates health keywords and region-scoped source filters.
+        Returns (url, variant_index_used). Program names come from the Programs
+        table; each variant rotates climate keywords and location-scoped source filters.
         """
         variants = VCPPromptTemplates.GDELT_EMERGING_KEYWORD_VARIANTS
         n_variants = len(variants)
@@ -1582,14 +1582,14 @@ class VCPPromptTemplates:
 
         n = max(1, min(250, int(max_records)))
         query = VCPPromptTemplates._gdelt_emerging_query_string(
-            variants[idx], idx, all_program_codes, region_groups
+            variants[idx], idx, all_program_names, location_groups
         )
         encoded_query = quote(query, safe="")
 
         url = (
             "https://api.gdeltproject.org/api/v2/doc/doc"
             f"?query={encoded_query}"
-            f"&mode=ArtList&maxrecords={n}&format=json&timespan=24h&sort=DateDesc"
+            f"&mode=ArtList&maxrecords={n}&format=json&timespan=7days&sort=DateDesc"
         )
         return url, idx
 
@@ -1621,20 +1621,23 @@ class VCPPromptTemplates:
         ANALYTICAL TASK
         ==================================================
         1. Generate concise, public-friendly intelligence cards for the Veridian Climate Pulse homepage.
-        2. Keep tone neutral, factual, concise, and Africaly understandable.
-        3. Each card = ONE primary health risk or health-related trend aligned with the article headline.
-        4. Every card MUST relate to an African program (infer from headline and sourceprogram).
-        5. Prefer category "Health" unless the story is clearly another domain with a direct health impact
-           (e.g. Climate, Conflict, Migration affecting health outcomes).
+        2. Keep tone neutral, factual, concise.
+        3. Each card = ONE primary climate risk or climate-related trend aligned with the article headline.
+        4. Every card MUST relate to a climate program (infer from headline and sourceprogram). Programs
+           are global — do not assume any particular continent or country.
+        5. Prefer category "Climate" unless the story is clearly another domain with a direct climate impact
+           (e.g. Migration, Economy, Security affected by climate stress).
         6. Preserve the article order from the input list when possible.
         7. Do NOT mention news outlets or "according to" in title or summary.
 
         Field rules:
         - programs[] length MUST equal the number of articles in the user message.
-        - summary: 1–2 sentences, maximum 200 characters; focus on health impact or health-system signal.
+        - summary: 1–2 sentences, maximum 200 characters; focus on climate impact or climate-system signal.
         - confidence: integer 0–100 (how clearly the article supports the classification).
-        - programCode: valid ISO 3166-1 alpha-2 for an African program (uppercase).
-        - region: African sub-region (e.g. West Africa, East Africa, Southern Africa, North Africa, Central Africa).
+        - program: the climate program/conference identifier (e.g. COP5, COP11), inferred from
+          sourceprogram or headline context. Do not force this into a country code.
+        - region: the geographic location tied to the program or story (e.g. host city/country,
+          or the region most affected — anywhere in the world, not limited to any single continent).
         - icon must match category.
         - color reflects urgency (low=green, medium=yellow, high=orange, critical=red, stable/watch=blue).
         - updatedAt: current UTC ISO-8601 datetime from the user message context.
@@ -1645,21 +1648,20 @@ class VCPPromptTemplates:
 
         {{
             "updatedAt": "2026-05-27T12:00:00Z",
-            "headline": "Africa Health Emerging Issues & Risks",
-            "subHeadline": "Live health signals from the last 24 hours across African programs — outbreaks, health systems, nutrition, and public health trends.",
+            "headline": "Veridian Climate Pulse Emerging Issues & Risks",
+            "subHeadline": "Live climate signals from the last 24 hours across global Climate programs — extreme weather, emissions, adaptation, and resilience trends.",
             "programs": [
                 {{
-                    "program": "Nigeria",
-                    "programCode": "NG",
-                    "region": "West Africa",
+                    "program": "COP5",
+                    "region": "Bonn, Germany",
                     "type": "risk",
                     "title": "Exact headline copied from GDELT article title field",
-                    "summary": "Concise public summary of the health story in under 200 characters.",
-                    "category": "Health",
+                    "summary": "Concise public summary of the climate story in under 200 characters.",
+                    "category": "Climate",
                     "status": "Active",
                     "urgency": "high",
                     "confidence": 75,
-                    "icon": "health",
+                    "icon": "climate",
                     "color": "orange",
                     "sourceUrl": "https://example.com/exact-url-from-gdelt-article-url-field"
                 }}
@@ -1704,7 +1706,7 @@ class VCPPromptTemplates:
         {VCPPromptTemplates._OUTPUT_STYLE}
         {VCPPromptTemplates._JSON_RULES}
         """
-
+    
     @staticmethod
     def emerging_trends_and_issues_user_prompt() -> str:
         """User message template for GDELT-backed emerging trends feed."""
@@ -1715,14 +1717,15 @@ class VCPPromptTemplates:
         GDELT articles (use ONLY these — do not browse the web; one card per article):
         {articles_json}
 
-        Scope: Veridian Climate Pulse — only African programs; health risks and trends.
+        Scope: Veridian Climate Pulse — global climate programs (not limited to any single
+        continent or country); climate risks and trends.
 
         For each article:
-        - Infer African program, programCode, region, category, status, urgency, color, icon, and summary
-          from its title and sourceprogram field.
-        - Default to category "Health" and icon "health" for outbreak, disease, nutrition, vaccination,
-          hospital, or public-health stories.
-        - Choose status/urgency/color consistently with the headline and health impact.
+        - Infer the climate program (e.g. COP5, COP11), region, category, status, urgency,
+          color, icon, and summary from its title and sourceprogram field.
+        - Default to category "Climate" and icon "climate" for drought, flood, heatwave, wildfire,
+          extreme weather, emissions, or climate-adaptation stories.
+        - Choose status/urgency/color consistently with the headline and climate impact.
 
         Now return the JSON output.
         """.strip()
