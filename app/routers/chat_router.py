@@ -12,6 +12,7 @@ from app.view_models.EmergingTrendsResult import ChatEmergingTrendsResponse
 from app.view_models.PillarLiveSignalsResult import ChatPillarLiveSignalsResponse
 logger = logging.getLogger(__name__)
 from app.services.chat_service import chat_service
+from app.view_models.KpiSummaryRequest import KpiSummaryRequest, KpiSummaryResponse, KpiSummaryResult
 
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -238,4 +239,43 @@ async def get_pillar_live_signals():
             f"Error in pillar live signals API: {str(e)}",
             exc_info=True,
         )
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post(
+    "/kpi-summary",
+    response_model=KpiSummaryResponse,
+    summary="Summarize KPI performance for end users",
+)
+async def summarize_kpi_performance(request: KpiSummaryRequest):
+    """
+    Sync KPI summarization endpoint.
+    Accepts KPI purpose, scores (role-filtered by C#), and interpretation bands.
+    Returns structured JSON summary scoped only to the provided KPI.
+    """
+    try:
+        if not request.layerName or not request.layerCode:
+            raise HTTPException(
+                status_code=400,
+                detail="layerName and layerCode are required",
+            )
+
+        response = await chat_service.summarize_kpi_performance(request)
+
+        if not response.get("success"):
+            return KpiSummaryResponse(
+                success=False,
+                message=response.get("message") or "Failed to generate KPI summary",
+                result=None,
+            )
+
+        result_data = response.get("result") or {}
+        return KpiSummaryResponse(
+            success=True,
+            message=response.get("message") or "KPI summary generated successfully",
+            result=KpiSummaryResult(**result_data) if result_data else None,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in KPI summary API: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
