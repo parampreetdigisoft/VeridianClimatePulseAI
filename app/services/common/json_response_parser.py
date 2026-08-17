@@ -242,7 +242,7 @@ def map_question_response(
         "SourceHierarchyLevel": analysis.get("source_trust_level"),
         "SourceDataExtract": analysis.get("source_data_extract"),
         # Optional extras
-        "SourcesConsulted": analysis.get("sources_consulted"),
+        "SourcesConsulted": analysis.get("data_sources_count"),
         "ConfidenceExplanation": analysis.get("confidence_explanation"),
     }
 
