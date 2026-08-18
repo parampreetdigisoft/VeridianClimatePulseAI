@@ -95,7 +95,140 @@ class VCPPromptTemplates:
         - Avoid internal scoring language
         - Use clear, concise, evidence-based statements
         - No bullet points or lists inside JSON string values
+        - key_findings and recommendations are natural paragraphs, not labelled fields
+        - Never use N) numbering inside an item; only the item prefix may use 1) 2) 3)
+        - COMPLETE the JSON. Never truncate. Prefer fewer complete items over a cut-off object.
     """
+# ------------------------------------------------------------------ #
+    #  Shared finding + recommendation standard for program reports       #
+    # ------------------------------------------------------------------ #
+    @staticmethod
+    def _finding_and_recommendation_standard(item_count: str) -> str:
+        return f"""
+        --------------------------------------------------
+        JSON COMPLETION (HIGHEST PRIORITY)
+        --------------------------------------------------
+        Output MUST be one complete, parseable JSON object.
+        Stay inside the output token budget. If space is tight, shorten paragraphs
+        rather than cutting JSON or dropping below {item_count} items.
+ 
+        --------------------------------------------------
+        ANALYTICAL LOGIC
+        --------------------------------------------------
+        Assessment -> Findings -> Triangulation -> Evidence Confidence -> Recommendation.
+        Use the completed assessment as primary evidence. Look across ALL pillars.
+        Pick the most consequential, including cross-pillar problems — not the
+        lowest scores. Write for the Program User. Do not quote individual questions.
+ 
+        Produce EXACTLY {item_count} key_findings and EXACTLY {item_count}
+        recommendations. They are paired: recommendation N addresses finding N.
+ 
+        The required information categories below are INTERNAL content requirements,
+        not output labels. Embed them naturally in the narrative.
+ 
+        --------------------------------------------------
+        key_findings
+        --------------------------------------------------
+        Return exactly {item_count} numbered findings.
+ 
+        Each finding must be written as one natural, concise analytical paragraph.
+        The paragraph must seamlessly incorporate all of the following:
+        - The current condition or situation
+        - The supporting evidence and current diagnostic signals (e.g. AI score,
+          evaluator score, discrepancy, research recency), including relevant
+          sources where available
+        - The mechanism or explanation of why the condition is occurring or how it
+          produces the observed effect
+        - The actual or potential climate program consequence
+ 
+        Do NOT explicitly write the labels Condition, Evidence, Mechanism, or
+        Program consequence.
+        Do NOT structure each finding as separate fields, category-labelled
+        sentences, or semicolon-separated components.
+ 
+        Write each finding as a single natural analytical narrative in which the
+        condition is introduced first, followed naturally by supporting evidence,
+        explanation/mechanism, and program consequence.
+ 
+        The reader must be able to follow:
+        What is happening -> What evidence supports it -> Why it is happening ->
+        Why it matters for the climate program.
+ 
+        Use current evidence from the most recent assessment and diagnostic
+        equation outputs wherever available.
+        Do not fabricate evidence, sources, statistics, or causal relationships.
+        Target 70-100 words per finding.
+ 
+        Example of the required writing style only — do not copy its content:
+        "1) COP5's mitigation targets show a widening gap between stated ambition and the scientific basis behind them, with the latest diagnostic run flagging a severe overpromising condition on the Mitigation Ambition vs Science Integration pillar. This pattern typically emerges when NDC commitments are set through political negotiation without a corresponding technical feasibility review. Left unaddressed, it undermines the credibility of the program's delivery pathway and increases the risk that near-term targets are missed."
+ 
+        --------------------------------------------------
+        recommendations
+        --------------------------------------------------
+        Return exactly {item_count} numbered recommendations.
+ 
+        Each recommendation must be written as one natural, concise analytical
+        paragraph, not as a list of labelled fields. It must read like a
+        professional climate-policy advisory recommendation, not a checklist.
+ 
+        Each recommendation must naturally incorporate:
+        - The specific finding or problem being addressed
+        - Why the proposed intervention should address the problem (mechanism)
+        - Relevant pillar(s) or climate policy domain(s) (e.g. mitigation,
+          adaptation, finance, governance, institutional readiness)
+        - The current signals/evidence supporting the intervention
+        - The relevant diagnostic dimension(s) (e.g. Ambition-Delivery Index, Diplomatic Risk & Trust Index, Institutional Readiness Scorecard)
+        - The affected program, region, negotiating party, or institution
+        - The potential harm if the issue is not addressed
+        - A relevant comparison with baseline, previous period, peer program, or
+          benchmark where reliable data exists
+        - Confidence level
+        - The specific action that should be taken
+        - The responsible actors
+        - Important risks or limitations
+        - What should be monitored after implementation
+ 
+        Pairing is mandatory:
+        1. Recommendation 1 -> Finding 1
+        2. Recommendation 2 -> Finding 2
+        3. Recommendation 3 -> Finding 3
+        4. Recommendation 4 -> Finding 4
+        5. Recommendation 5 -> Finding 5
+        6. Recommendation 6 -> Finding 6
+ 
+        Confidence MUST still be stated naturally in the paragraph, for example:
+        "Confidence is Moderate because ..."
+        Use exactly one of: High, Moderate, Low, Insufficient.
+        If a comparison is unavailable, say naturally that no reliable comparison
+        is available — do not invent one.
+        If evidence is insufficient, state the limitation and use Insufficient
+        (or Low) as appropriate; then the action should close the evidence gap.
+ 
+        Target 110-150 words per recommendation.
+ 
+        --------------------------------------------------
+        CRITICAL OUTPUT RULE
+        --------------------------------------------------
+        Do NOT output these labels in the generated text:
+        Condition:  Evidence:  Mechanism:  Program consequence:  Finding:
+        Pillars:  Signals:  Diagnostic Dimension:  Affected:  Harm:  Comparative:
+        Confidence:  Action:  Actors:  Risks:  Monitor:
+ 
+        Do NOT produce a structure such as:
+        "Finding: ...; Mechanism: ...; Pillars: ...; Signals: ..."
+ 
+        Embed the information naturally. ASCII only. No markdown. No ellipsis.
+        One numbered item per line (\\n before 2) 3) ...). No nested 1) 2) 3).
+        """
+ 
+    @staticmethod
+    def _clip_context(text: Optional[str], max_chars: int) -> str:
+        """Keep injected context inside the model window so output JSON can finish."""
+        if not text:
+            return ""
+        if len(text) <= max_chars:
+            return text
+        return text[:max_chars] + " [Context truncated to fit the model window.]"
 
     # ================================================================== #
     #  QUESTION-level prompt                                              #
@@ -171,7 +304,7 @@ class VCPPromptTemplates:
 
             9. Inclusion & equity review
             Consider:
-            - developing-country participation
+            - developing-program participation
             - gender inclusion
             - Indigenous participation
             - stakeholder accessibility
@@ -511,7 +644,9 @@ class VCPPromptTemplates:
         Step 2:  Establish temporal scope (prefer last 12 months; prior COP baselines).
         Step 3:  Collect four-layer evidence at program scale.
         Step 4:  Screen for program-level distortion (announcements vs delivery).
-        Step 5:  Identify cross-pillar patterns across the  governance pillars.
+        Step 5:  Identify cross-pillar patterns — look across the whole assessment,
+                 not pillar by pillar. Several weak scores may share one institutional
+                 cause; one weakness may be hitting several pillars at once.
         Step 6:  Apply relational integrity test (ambition–finance–implementation coherence).
         Step 7:  Run program-scale stress simulation (geopolitical, finance, legitimacy).
         Step 8:  Test inclusion and Party-group equity.
@@ -520,12 +655,14 @@ class VCPPromptTemplates:
         Step 11: Apply data silence protocol.
         Step 12: Assign overall provisional score.
         Step 13: Assess trajectory — advancing, stagnating, or regressing.
-
+        Step 14: Convert the assessment into findings, triangulate them, assign
+                 evidence confidence (High, Medium, Low, or Insufficient), then
+                 write strategic_recommendation. Recommendation comes last.
         OUTPUT: Return ONLY valid JSON (no markdown, no extra text):
         {{        
             "ai_score": <-4|-3|-2|-1|0|1|2|3|4|null>,
             "ai_progress": <0.00-100.00 or null if Indeterminate>,
-            "confidence_level": "<High|Medium|Low>",
+            "confidence_level": "<High|Medium|Low|Insufficient>",
             "executive_summary": "<500-700 words, ASCII only. Flowing prose — no section headers, no bullet points. Four sections in order: Program Overview, System Diagnosis, Strategic Strengths, Structural Risks.>",
             "four_layer_evidence": {{
                 "structural": "<20-150 words. Key structural evidence across pillars — decisions, mandates, institutional arrangements.>",
@@ -545,7 +682,7 @@ class VCPPromptTemplates:
             "inclusion_equity_adjustment": "<20-150 words. Inclusion/equity imbalances across Party groups, gender, Indigenous, or access. Score impact?>",
             "opacity_risk": "<20-150 words. Which pillar domains had the most opaque or unverifiable data? What does that signal about transparency?>",
             "non_compensation_note": "<20-150 words. Which apparent strengths were discounted under the Non-Compensation Rule?>",
-            "cross_pillar_patterns": "<20-150 words. Themes cutting across multiple climate-governance pillars. Are weaknesses reinforcing each other?>",
+            "cross_pillar_patterns": "<20-150 words. Themes cutting across multiple climate-governance pillars. Identify shared institutional drivers, not a list of isolated low scores.>",
             "relational_integrity": "<20-150 words. Does ambition–finance–implementation–accountability align, or are there critical disconnects?>",
             "institutional_capacity": "<20-150 words. Overall institutional readiness and delivery capability across pillars.>",
             "equity_assessment": "<20-150 words. Are governance conditions equitable across Party groups, regions, and inclusion dimensions?>",
@@ -587,6 +724,8 @@ class VCPPromptTemplates:
     # ================================================================== #
     @staticmethod
     def program_summery_system_prompt(publicContext: str, documentContext: str) -> str:
+        publicContext = VCPPromptTemplates._clip_context(publicContext, 8000)
+        documentContext = VCPPromptTemplates._clip_context(documentContext, 8000)
         return f"""
         You are a lead analyst for the Veridian Climate Pulse (VCP).
         You produce program-level executive assessments grounded in both uploaded local
@@ -620,46 +759,52 @@ class VCPPromptTemplates:
         Step 1: Analyse local/uploaded context thoroughly.
         Step 2: Expand and validate using relevant public climate-governance knowledge.
         Step 3: Extract point-wise key findings grounded in the combined evidence.
-        Step 4: Derive prioritised, actionable recommendations from those findings.
-        Step 5: Synthesize the executive summary (four-section structure below).
+        Step 4: Synthesize cross-pillar patterns and system-level insights across the ENTIRE assessment — not pillar by pillar.
+        Step 5: Distil the most consequential results into structured key findings
+                (condition, evidence, mechanism, climate program consequence, confidence).
+        Step 6: Triangulate each finding using related indicators, pillars,
+                comparable contexts, and underlying drivers.
+        Step 7: Assign evidence confidence (High, Moderate, Low, or Insufficient).
+        Step 8: Only then generate recommendations using the Recommendation Standard.
+        Step 9: Generate the structured executive outputs below. Put findings and
+                recommendations LAST in the JSON (after executive_summary).
 
+        {VCPPromptTemplates._finding_and_recommendation_standard("6")}
         -----------------------------------------
         OUTPUT REQUIREMENTS
         -----------------------------------------
-        Return ONLY valid JSON (no markdown, no explanation):
+        Return ONLY valid JSON. Close every brace. Never truncate.
 
         {{
-            "key_findings": "<Single string. Exactly 3-5 items. Format strictly: 1) <item> || 2) <item> || 3) <item>. Evidence-grounded key findings from Stage 1 + Stage 2 data — major developments, risks, gaps, and cross-pillar patterns.>",
-            "recommendations": "<Single string. Exactly 3-5 items. Format strictly: 1) <item> || 2) <item> || 3) <item>. Actionable, prioritised recommendations for negotiators and policymakers.>",
-            "executive_summary": "<550-700 words, ASCII only. Flowing prose. No headers, no bullet points. Four sections in strict order: Program Overview, System Diagnosis, Strategic Strengths, Structural Risks.>"
+            "executive_summary": "<350-450 words, ASCII. Flowing prose, no headers. Four sections: Program Overview, System Diagnosis, Strategic Strengths, Structural Risks. Separate sections with \\n\\n.>",
+            "key_findings": "<Exactly 6 numbered natural paragraphs. 1) <70-100 word paragraph: condition, then diagnostic evidence/sources, then mechanism, then climate program consequence. No labels such as Condition: or Evidence:>\\n2) ...>",
+            "recommendations": "<Exactly 6 numbered natural paragraphs, paired 1:1 with findings. 1) <110-150 word paragraph embedding problem, mechanism, pillars/domains, signals, diagnostic dimension, affected program/party, harm, comparison or 'no reliable comparison is available', naturally stated Confidence High|Moderate|Low|Insufficient, action, actors, risks, monitoring. No labels such as Finding: or Action:>\\n2) ...>"
         }}
 
-        -----------------------------------------
-        KEY FINDINGS & RECOMMENDATIONS - FIELD RULES (CRITICAL)
-        -----------------------------------------
-        - key_findings and recommendations MUST be single string values — NOT arrays.
-        - Each MUST contain 3-5 numbered items.
-        - Use ONLY "||" as the separator. No bullet points, no newlines, no extra separators.
-        - Each item: 1-2 sentences maximum.
-        - No newline characters anywhere in the string.
-        - Ground every point in the provided local and public data.
+        LINE-BREAK RULES:
+        - Numbered items use \\n before 2) 3) ...
+        - Each finding and each recommendation is ONE natural paragraph after 1) 2) 3)
+        - Never use field labels (Condition:, Evidence:, Finding:, Action:, etc.)
+        - Never use "||" or markdown bullets
+        - key_findings / recommendations: exactly 6 paired items
+        - executive_summary: four sections separated with \\n\\n only
 
         -----------------------------------------
-        EXECUTIVE SUMMARY FRAMEWORK (STRICT)
+        EXECUTIVE SUMMARY FRAMEWORK
         -----------------------------------------
-        Target: 550-700 words. Flowing prose — no headers, no bullet points.
+        Target: 350-450 words. Flowing prose — no headers, no bullet points.
 
-        SECTION 1 - Program OVERVIEW (~120-150 words):
+        SECTION 1 - PROGRAM OVERVIEW (~80-100 words):
         Context, trajectory (advance/stagnate/regress), and overall climate-governance functioning.
 
-        SECTION 2 - SYSTEM DIAGNOSIS (~130-170 words):
+        SECTION 2 - SYSTEM DIAGNOSIS (~90-110 words):
         System classification: advancing / stagnating / fragile / reforming / regressing.
         Ground the classification in evidence from both Stage 2 local and Stage 1 public data.
 
-        SECTION 3 - STRATEGIC STRENGTHS (~130-170 words):
+        SECTION 3 - STRATEGIC STRENGTHS (~90-110 words):
         Top-performing climate-governance pillars and structural advantages.
 
-        SECTION 4 - STRUCTURAL RISKS (~130-170 words):
+        SECTION 4 - STRUCTURAL RISKS (~90-110 words):
         Key systemic risks with clear cause-effect relationships.
         Prioritise risks where local Stage 2 data reveals gaps not visible in public sources.
 
@@ -667,9 +812,7 @@ class VCPPromptTemplates:
         STYLE RULES
         -----------------------------------------
         - Professional, analytical, policy-grade tone.
-        - No fluff, no repetition.
-        - Avoid vague language.
-        - Maximise clarity, relevance, and insight density.
+        - No fluff, no repetition. Finish the JSON.
 
         {VCPPromptTemplates._OUTPUT_STYLE}
         {VCPPromptTemplates._JSON_RULES}
@@ -719,7 +862,13 @@ class VCPPromptTemplates:
         Step 2: Detect emerging risks or escalation signals (finance gaps, access issues,
                 implementation slippage, legitimacy stress).
         Step 3: Distil evidence into point-wise key findings.
-        Step 4: Produce prioritised, actionable recommendations from those findings.
+        Step 4: Synthesise cross-cutting patterns across the current signals — not pillar by pillar.
+        Step 5: Distil structured key findings (condition, evidence, mechanism, health consequence, confidence).
+        Step 6: Triangulate each finding against related current indicators and comparable contexts.
+        Step 7: Assign evidence confidence (High, Moderate, Low, or Insufficient).
+        Step 8: Only then generate recommendations using the Recommendation Standard.
+
+        {VCPPromptTemplates._finding_and_recommendation_standard("6")}
 
         -----------------------------------------
         OUTPUT REQUIREMENTS
@@ -727,26 +876,23 @@ class VCPPromptTemplates:
         Return ONLY valid JSON (no markdown, no explanation):
 
         {{
-            "key_findings": "<Single string. Exactly 3-5 items. Format strictly: 1) <item> || 2) <item> || 3) <item>. Point-wise key findings from current Stage 1 public climate-governance data — what is happening now, what has changed, and what requires attention.>",
-            "recommendations": "<Single string. Exactly 3-5 items. Format strictly: 1) <item> || 2) <item> || 3) <item>. Point-wise, actionable recommendations based on the key findings. Prioritise urgency and decision value.>"
+            "key_findings": "<Exactly 6 numbered natural paragraphs grounded in CURRENT 7-30 day signals. 1) <70-100 word paragraph: condition, then evidence/sources, then mechanism, then health consequence. No labels such as Condition: or Evidence:>\\n2) ...>",
+            "recommendations": "<Exactly 6 numbered natural paragraphs, paired 1:1 with findings. 1) <110-150 word paragraph embedding problem, mechanism, domains, signals, ROSEW, affected group, harm, comparison or 'no reliable comparison is available', naturally stated Confidence High|Moderate|Low|Insufficient, action, actors, risks, monitoring. No labels such as Finding: or Action:>\\n2) ...>"
         }}
 
-        -----------------------------------------
-        FIELD RULES (CRITICAL)
-        -----------------------------------------
-        - key_findings and recommendations MUST be single string values — NOT arrays.
-        - Each MUST contain 3-5 numbered items.
-        - Use ONLY "||" as the separator. No bullet points, no newlines, no extra separators.
-        - Each item: 1-2 sentences maximum.
-        - No newline characters anywhere in the string.
-        - Ground every point in current public Stage 1 evidence.
+       
+        LINE-BREAK RULES:
+        - Numbered items use \\n before 2) 3) ...
+        - Each finding and each recommendation is ONE natural paragraph after 1) 2) 3)
+        - Never use field labels (Condition:, Evidence:, Finding:, Action:, etc.)
+        - Never use "||" or markdown bullets
+        - key_findings / recommendations: exactly 6 paired items
 
         -----------------------------------------
         STYLE RULES
         -----------------------------------------
         - Professional, analytical, decision-oriented tone.
-        - No fluff, no repetition, no historical filler.
-        - Every sentence must add situational value.
+        - No fluff, no historical filler. Finish the JSON.
 
         {VCPPromptTemplates._OUTPUT_STYLE}
         {VCPPromptTemplates._JSON_RULES}
@@ -1624,7 +1770,7 @@ class VCPPromptTemplates:
         2. Keep tone neutral, factual, concise.
         3. Each card = ONE primary climate risk or climate-related trend aligned with the article headline.
         4. Every card MUST relate to a climate program (infer from headline and sourceprogram). Programs
-           are global — do not assume any particular continent or country.
+           are global — do not assume any particular continent or program.
         5. Prefer category "Climate" unless the story is clearly another domain with a direct climate impact
            (e.g. Migration, Economy, Security affected by climate stress).
         6. Preserve the article order from the input list when possible.
@@ -1635,8 +1781,8 @@ class VCPPromptTemplates:
         - summary: 1–2 sentences, maximum 200 characters; focus on climate impact or climate-system signal.
         - confidence: integer 0–100 (how clearly the article supports the classification).
         - program: the climate program/conference identifier (e.g. COP5, COP11), inferred from
-          sourceprogram or headline context. Do not force this into a country code.
-        - region: the geographic location tied to the program or story (e.g. host city/country,
+          sourceprogram or headline context. Do not force this into a program code.
+        - region: the geographic location tied to the program or story (e.g. host city/program,
           or the region most affected — anywhere in the world, not limited to any single continent).
         - icon must match category.
         - color reflects urgency (low=green, medium=yellow, high=orange, critical=red, stable/watch=blue).
@@ -1718,7 +1864,7 @@ class VCPPromptTemplates:
         {articles_json}
 
         Scope: Veridian Climate Pulse — global climate programs (not limited to any single
-        continent or country); climate risks and trends.
+        continent or program); climate risks and trends.
 
         For each article:
         - Infer the climate program (e.g. COP5, COP11), region, category, status, urgency,

@@ -286,6 +286,17 @@ class DatabaseRepository:
                 a.PerceptionEvidence,
                 a.CrossPillarPatterns,
                 a.StrategicRecommendation,
+                a.TemporalScope,
+				a.DistortionScreening,
+				a.GeopoliticalShock,
+				a.LegitimacyShock,
+				a.FinanceShock,
+				a.RelationalIntegrity,
+				a.InstitutionalCapacity,
+				a.EquityAssessment,
+				a.OpacityRisk,
+				a.PrimarySource,
+				a.AssessmentValueNote,
                 p.PillarName
             FROM ClimatePrograms c
             LEFT JOIN AIProgramScores a 

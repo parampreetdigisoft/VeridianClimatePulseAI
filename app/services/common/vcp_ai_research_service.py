@@ -44,7 +44,7 @@ _PILLAR_USER_TMPL = """
     Return ONLY valid JSON.
 """
 
-_COUNTRY_USER_TMPL = """
+_PROGRAM_USER_TMPL = """
     Program: {program_name}
     Program_Year: {year}
     program_description: {program_description}
@@ -99,6 +99,7 @@ class VCPResearchService:
                     "question_text": question_text,
                 },
                 label=label,
+                max_tokens=8192,
             )
 
             analysis = json.loads(jrp.clean_json_response(raw))
@@ -169,7 +170,7 @@ class VCPResearchService:
             label = f"program|{program_name}"
             raw = await self._llm_svc.invoke_chain(
                 system_prompt=system_prompt,
-                user_template=_COUNTRY_USER_TMPL,
+                user_template=_PROGRAM_USER_TMPL,
                 variables={
                     "program_name": program_name,
                     "year": year,
@@ -197,7 +198,12 @@ class VCPResearchService:
         documentContext: Optional[str],
         year: int = None,
     ) -> Dict[str, Any]:
-        """Produce a cross-pillar program-level Healthassessment."""
+        """
+        Produce a cross-pillar program-level Healthassessment.
+        ai_program_context all info of program context        
+        local document context not public available data
+
+        """
         try:
             # Fix: Proper length check
             if not documentContext or len(documentContext) < 100:
@@ -220,7 +226,7 @@ class VCPResearchService:
 
             raw = await self._llm_svc.invoke_chain(
                 system_prompt=system_prompt,
-                user_template=_COUNTRY_USER_TMPL,
+                user_template=_PROGRAM_USER_TMPL,
                 variables={
                     "program_name": program_name,
                     "year": year,
@@ -228,6 +234,7 @@ class VCPResearchService:
                     "location": location,
                 },
                 label=label,
+                max_tokens=8192,
             )
 
             analysis = json.loads(jrp.clean_json_response(raw))
