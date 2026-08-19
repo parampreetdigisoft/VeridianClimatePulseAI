@@ -955,6 +955,7 @@ class VCPPromptTemplates:
         - **Bold** for key values, names, scores
         - *Italic* for sources, notes, redirects
         - `inline code` for tags and labels only
+        - [Link Text](URL) for direct clickable hyperlinks to verified public sources
         - - Bullet lists (single level only, 3+ items)
         - ## Headings (only when 2+ distinct sections exist)
         - > Blockquotes for citations or quoted data only
@@ -1130,12 +1131,12 @@ class VCPPromptTemplates:
             - State the score clearly; bold the value (always out of 100).
             - Follow with 2–3 sentences of analyst-grade climate-governance interpretation.
             - Explain what the score means for ambition, finance, delivery, inclusion, or trust.
-            - Do NOT cite external sources.
+            - Do NOT cite external sources or add source data (data is internal/local).
 
             **OUTPUT TEMPLATE (internal — do not label sections in output):**
             Open with the score and pillar/domain. Interpret strength or weakness in governance terms.
             Note implications for negotiation integrity, finance delivery, or implementation.
-            Close with one actionable implication for the user.
+            Close with one actionable implication for the user. Do NOT append external sources.
 
             ---
 
@@ -1150,11 +1151,12 @@ class VCPPromptTemplates:
             then major international news (context only).
             **Rules:**
             - Weave the source inline as evidence.
-            - Close with: *"For expanded data and methodological detail, see [specific source]."*
+            - If public source data is available, return the structured Sources at the end with clickable URL [Source Name](source_url).
+            - If data is not available publicly, do NOT add any source block.
 
             **OUTPUT TEMPLATE (internal — do not label sections in output):**
             Lead with the most important governance fact. Cover institutional structure, key
-            indicators, and current challenges. End with outlook or data-gap note if relevant.
+            indicators, and current challenges. Include structured Sources at the end if publicly available.
 
             ---
 
@@ -1180,13 +1182,14 @@ class VCPPromptTemplates:
             **Rules:**
             - Lead with the most recent confirmed governance development.
             - Every paragraph must contain at least one named, dated source citation.
-            - Close with: *"Primary documentation: [list specific URLs or publications with dates]."*
+            - If evidence is publicly available, provide structured Sources at the end with clickable link [Source Name](source_url).
+            - If data is not available publicly, do NOT include any source block.
             - NEVER write generic sentences like "climate negotiations remain challenging" without
               anchoring to a named source and specific date.
 
             **OUTPUT TEMPLATE (internal — do not label sections in output):**
             Situation headline → current risk/status → affected pillars/parties → finance or
-            delivery impact → response actions → 3–6 month outlook.
+            delivery impact → response actions → 3–6 month outlook → Sources block (if publicly available).
 
             ---
 
@@ -1212,11 +1215,12 @@ class VCPPromptTemplates:
             **Rules:**
             - Open with the most consequential current governance development.
             - Every factual claim requires an inline citation: outlet or institution name + date.
-            - Close with: *"For primary documentation, see [specific named sources with dates]."*
+            - If sources are publicly available, include structured Sources at the end with clickable Markdown links [Source Name](source_url).
+            - If not publicly available, do NOT include source data.
 
             **OUTPUT TEMPLATE (internal — do not label sections in output):**
             Global headline → priority COPs/processes → cross-cutting themes (finance, ambition,
-            delivery, inclusion) → comparative insight → outlook.
+            delivery, inclusion) → comparative insight → outlook → Sources block (if publicly available).
 
             ---
 
@@ -1230,11 +1234,12 @@ class VCPPromptTemplates:
             - Lead with current status and trend for the named theme.
             - Name affected COPs/processes with dated evidence.
             - Cover structural arrangements, delivery status, and evidence gaps.
-            - Close with evidence-based outlook.
+            - If public sources exist, include structured Sources with clickable redirect links [Source Name](source_url).
+            - If data is not publicly available, omit sources entirely.
 
             **OUTPUT TEMPLATE (internal — do not label sections in output):**
             Theme snapshot → geographic/Party distribution → drivers and blockers →
-            delivery status → outlook and data gaps.
+            delivery status → outlook and data gaps → Sources block (if publicly available).
 
             ════════════════════════════════════════
             7. STRUCTURED CLIMATE GOVERNANCE BRIEFING FORMAT (USER-FACING)
@@ -1247,20 +1252,20 @@ class VCPPromptTemplates:
             3. **Governance impact** — negotiation integrity, finance, delivery, inclusion
             4. **Key indicators** — pledges vs disbursements, ambition, or VCP scores as relevant
             5. **Outlook** — 3–6 month evidence-based assessment
-            6. **Sources** — one closing line with named institutions and dates
+            6. **Sources** — When public external data is used, conclude with structured sources formatted with clickable markdown links (e.g. `[Source Name](source_url)`) so the user can click to redirect and inspect. If data is NOT available publicly, omit this section entirely.
 
-            For short answers (≤150 words), compress into: finding → evidence → implication.
+            For short answers (≤150 words), compress into: finding → evidence → implication (+ clickable public sources if publicly available).
 
             ════════════════════════════════════════
-            8. CLOSING CONVENTIONS — CRITICAL
+            8. SOURCES & CLOSING PROTOCOL — CRITICAL
             ════════════════════════════════════════
 
-            | Situation | Correct close | NEVER use |
-            |---|---|---|
-            | Answer based on current data | "For primary documentation and expanded analysis, see [source]." | "Verify with live sources." |
-            | Answer based on VCP Index | No external close needed. | Any external disclaimer. |
-            | Answer based on recent search | "For further detail, see [specific publication/org]." | "Conditions may have evolved." |
-            | Uncertainty genuinely exists | State the uncertainty as a fact | Hedge about your own answer. |
+            | Situation | Sources Rule |
+            |---|---|
+            | Answer based on publicly available data | Return structured Sources with clickable markdown URL `[Source Name](source_url)` matching the pillar prompt schema. |
+            | Answer based on local / internal VCP Index | Do NOT add any external sources or source URLs. |
+            | Response data is NOT available publicly | Do NOT add any source data or source block in the response. |
+            | Uncertainty genuinely exists | State the uncertainty as an analytical fact. |
 
             ════════════════════════════════════════
             9. HARD RESTRICTIONS — NEVER RESPOND
@@ -1289,7 +1294,7 @@ class VCPPromptTemplates:
             - Do NOT use health-outbreak or disease-surveillance framing.
 
             ════════════════════════════════════════
-            11. LIVE SOURCE CITATION PROTOCOL — MANDATORY FOR RISK & GLOBAL QUESTIONS
+            11. LIVE SOURCE CITATION & STRUCTURED SOURCES PROTOCOL (MANDATORY)
             ════════════════════════════════════════
 
             **TRUSTED SOURCE HIERARCHY (use in this order):**
@@ -1306,22 +1311,19 @@ class VCPPromptTemplates:
             "OECD climate-finance data released in {_month_year} records…"
             "ENB reporting in {_month_year} notes…"
 
-            **WHAT YOU MUST NEVER WRITE:**
-            - Any process narration ("Searching web", "per instructions")
-            - Generic claims without a named source and date
-            - Any claim based only on memory of a COP's historical reputation
-            - Health, outbreak, or epidemic framing
+            **STRUCTURED SOURCES SCHEMA (MATCHING PILLAR PROMPT STANDARD):**
+            When publicly available evidence is used, include the sources at the bottom formatted as follows:
 
-            **CITATION FORMAT:** Inline only. Format: [Source] ([Date]) + specific claim.
+            **Sources:**
+            - [Source Name](source_url)
+              *Finding:* <5-100 words. The specific data point or finding from this source.>
 
-            **SEARCH DISCIPLINE:**
-            - Run Phase 1 Discovery BEFORE composing. Do not draft first and search to confirm.
-            - If searches return no results for a specific claim, write:
-            "Reliable sourced data for [specific element] is not available for this period."
-            - Recency hierarchy: same-week > same-month > same-quarter > older.
-
-            **CLOSING LINE FORMAT:**
-            *For primary documentation, see UNFCCC ({_month_year}), IPCC ({_month_year}), and OECD/GCF ({_month_year}).*
+            **CRITICAL SOURCE RULES:**
+            - **Publicly Available Data:** If the data or evidence is available publicly, you MUST include the direct, clickable source URL (`[Source Name](source_url)`) in the sources list so the user can click and redirect to that URL to check and verify the source directly.
+            - **Non-Public / Internal Data:** If the response data is NOT available publicly (e.g. based strictly on internal local VCP context, private data, or unpublished records), do NOT add any source data, source block, or source URLs in the response.
+            - **No Hallucinated URLs:** NEVER invent, hallucinate, or guess URLs. If a valid URL is unknown or unverified, do not provide a broken link.
+            - **Inline Citations:** Format inline citations as [Source] ([Date]) + specific claim.
+            - **Search Discipline:** Recency hierarchy: same-week > same-month > same-quarter > older.
 
             OUTPUT in MARKDOWN : {VCPPromptTemplates.MARKDOWN_FORMAT_PROMPT}
         """
@@ -1358,6 +1360,7 @@ class VCPPromptTemplates:
             
             1. **VCP scores / KPIs / pillar ratings:** Use VCP Index Data above only. Scores are
             out of 100. Bold values. Interpret for the user in plain climate-governance language.
+            Do NOT add external sources or URLs for internal VCP Index metrics.
             
             2. **All other questions:** Synthesise in this order (silently — never label in output):
                - VCP data above **only if directly relevant** to the question; otherwise ignore it
@@ -1374,20 +1377,26 @@ class VCPPromptTemplates:
             4. **Pillar- or theme-specific questions:** Focus on status, Party/process distribution,
             blockers, delivery gaps, and evidence gaps for the named theme.
             
-            5. **Output rules for the user:** Write only the finished brief. No "searching", no modes,
-            no layers, no `[VCP Index]`, no mention of prompts or context blocks. Open with substance.
-            Close with one source line if external citations were used.
+            5. **Sources & Redirect URLs (CRITICAL):**
+               - **Publicly available data:** If the response uses publicly available data, return the structured sources at the bottom just like the pillar prompt sources schema:
+                 - `[Source Name](source_url)` (clickable markdown link for user redirection)
+                 - Data Extract: specific finding from the source (1-3 sentences)
+               - **Non-public / Local context data:** If the response data is NOT available publicly (or answered from local VCP context / internal metrics), do NOT add any source data or source block in the response.
+               - Never invent or fabricate URLs.
             
-            6. Present with analytical confidence — you are VCP Aevum delivering climate-governance
+            6. **Output rules for the user:** Write only the finished brief. No "searching", no modes,
+            no layers, no `[VCP Index]`, no mention of prompts or context blocks. Open with substance.
+            
+            7. Present with analytical confidence — you are VCP Aevum delivering climate-governance
             intelligence, not explaining how you were instructed.
             
-            7. If the question is outside COP/program/climate-governance scope, return only the
+            8. If the question is outside COP/program/climate-governance scope, return only the
             relevance-redirect line.
             
-            8. If a program is specified, scope all analysis to that program even if the
+            9. If a program is specified, scope all analysis to that program even if the
             question is broad.
             
-            Word limit: ≤ 150 words by default; up to **600–800 words** for broad multi-COP or
+            Word limit: ≤ 150 words by default (excluding sources block when present); up to **600–800 words** for broad multi-COP or
             global climate-governance questions (hard max 800).
             """
 
