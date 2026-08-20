@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 _QUESTION_USER_TMPL = """
     Program: {program_name}
-    Program_Year: {year}
     program_description: {program_description}
     Location: {location}
     Pillar: {pillar_name}
@@ -37,7 +36,6 @@ _QUESTION_USER_TMPL = """
 
 _PILLAR_USER_TMPL = """
     Program: {program_name}
-    Program_Year: {year}
     program_description: {program_description}
     Location: {location}
     Pillar: {pillar_name}
@@ -46,7 +44,6 @@ _PILLAR_USER_TMPL = """
 
 _PROGRAM_USER_TMPL = """
     Program: {program_name}
-    Program_Year: {year}
     program_description: {program_description}
     Location: {location}
 """
@@ -190,7 +187,6 @@ class VCPResearchService:
         location: str,
         ai_program_context: str,
         documentContext: Optional[str],
-        year: int = None,
     ) -> Dict[str, Any]:
         """
         Produce a cross-pillar program-level Healthassessment.
@@ -223,7 +219,6 @@ class VCPResearchService:
                 user_template=_PROGRAM_USER_TMPL,
                 variables={
                     "program_name": program_name,
-                    "year": year,
                     "program_description": program_description,
                     "location": location,
                 },

@@ -378,7 +378,6 @@ class ScoreAnalyzerService:
         program_Name = ai_program["ProgramName"]
         description = ai_program["Description"]
         location =ai_program["Location"]
-        year =ai_program["Year"]
 
         question = f"""
         What are the most critical recent developments, emerging risks, structural weaknesses, and key strengths across all major sectors in {program_Name}? Include insights on governance, security, economy, social cohesion, infrastructure, and institutional effectiveness. Focus on cross-pillar patterns and high-impact information relevant for executive-level program assessment and situational awareness.
@@ -396,8 +395,7 @@ class ScoreAnalyzerService:
                     program_description=description,
                     location =location,
                     ai_program_context=ai_program_context,
-                    documentContext=document_context,
-                    year=year
+                    documentContext=document_context
                 )
 
         result = self._build_immediateSituation_record(program_id, ai_data)

@@ -180,7 +180,6 @@ class ChatService:
                 program_name=program_name,
                 ai_program_context=ai_program_context,
                 allPillarContexts=all_pillar_contexts,
-                year=year
             )
 
             if not ai_result.get("success"):

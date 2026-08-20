@@ -371,7 +371,7 @@ class RAGQueryService:
         return []
 
 
-    async def program_executive_slides( self,  program_name: str, ai_program_context: str, allPillarContexts: str, year: int = None) -> Dict[str, Any]:
+    async def program_executive_slides( self,  program_name: str, ai_program_context: str, allPillarContexts: str) -> Dict[str, Any]:
 
         try:
 
@@ -391,9 +391,6 @@ class RAGQueryService:
             user_template = """
             program:
             {program_name}
-
-            Year:
-            {year}
             """
 
             # ---------------------------------------------------------
@@ -404,7 +401,6 @@ class RAGQueryService:
                 user_template=user_template,
                 variables={
                     "program_name": program_name,
-                    "year": year
                 },
                 label=f"program-executive-slides|{program_name}",
             )
