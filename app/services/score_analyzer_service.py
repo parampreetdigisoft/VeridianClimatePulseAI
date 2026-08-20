@@ -201,7 +201,6 @@ class ScoreAnalyzerService:
     ) -> bool:
 
         climateProgramID = int(program.ClimateProgramID)
-        year = datetime.now().year
 
         where = f"ClimateProgramID = {climateProgramID}"
 
@@ -214,7 +213,6 @@ class ScoreAnalyzerService:
                 (
                     SELECT QuestionID
                     FROM AIEstimatedQuestionScores
-                    WHERE Year = {year}
                 )
             """
         df = await self._db.get_view_data("vw_AiProgramPillarQuestionEvaluations", where)

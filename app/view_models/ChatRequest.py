@@ -22,7 +22,7 @@ class ChatProgramRequest(BaseModel):
 
 class ChatCrossComparisionRequest(BaseModel):
     questionText: str
-    programIDs: list[int]
+    climateProgramIDs: list[int]
     historyText: Optional[str] = None
     faqid: Optional[int] = None
 

@@ -99,7 +99,7 @@ async def ask(request: ChatCrossComparisionRequest):
     try:
         result = await chat_service.answer_crossComparision (
             questionText = request.questionText,
-            programIDs = request.programIDs,
+            climateProgramIDs = request.climateProgramIDs,
             historyText = request.historyText
         )
 

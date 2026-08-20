@@ -80,7 +80,6 @@ class ChatService:
         historyText: Optional[str] = None,
         faqid: Optional[int] = None
     ) -> str:
-        year = datetime.now().year    
         
         relevant_faq_ids =[]
         if faqid is None: 
@@ -105,33 +104,30 @@ class ChatService:
     async def answer_crossComparision(
         self,
         questionText: str,
-        programIDs: list[int],
+        climateProgramIDs: list[int],
         historyText: Optional[str] = None,
     ) -> str:
-
-        year = datetime.now().year
-
         programs = []
 
-        if len(programIDs) > 0:
+        if len(climateProgramIDs) > 0:
             query = f"""
                 SELECT ProgramName, Description, Year, Location
                 FROM ClimatePrograms
-                WHERE ClimateProgramID IN ({",".join(map(str, programIDs))})
+                WHERE ClimateProgramID IN ({",".join(map(str, climateProgramIDs))})
             """
 
             programs = await self._db.engine.fetch_dicts_async(query)
 
         relevant_faq_ids = []
 
-        if len(programIDs) == 0:
+        if len(climateProgramIDs) == 0:
             faqs = await self._db.get_FAQ_context(True)
             relevant_faq_ids = await rag_query_service.get_related_FAQ_IDs(
                 questionText,
                 faqs
             )
         else:
-            relevant_faq_ids = programIDs
+            relevant_faq_ids = climateProgramIDs
 
         if len(relevant_faq_ids) > 0:
             ai_context = await self._db.GetCrossComparisionLocalContextDataForLLM(

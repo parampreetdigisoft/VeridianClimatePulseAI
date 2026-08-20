@@ -26,6 +26,16 @@ from app.services.common.embedding import create_embedding_function
 from app.services.common.llm_base_service import LLMBaseService
 from app.services.common.program_prompt import VCPPromptTemplates
 from app.services.common.gdelt_client import fetch_doc_articles
+from app.services.common.citation_binder import (
+    apply_verified_citations,
+    merge_verified_sources
+)
+from app.services.common.web_search_client import (
+    invoke_with_web_search,
+    web_search_available,
+)
+from app.services.common.web_search_policy import question_needs_web_search
+
 from app.services.common.pillar_prompts import VCPPPillarPrompts
 from app.services.core.repository import DatabaseRepository
 from app.services.common import json_response_parser as jrp
@@ -143,24 +153,9 @@ class RAGQueryService:
         historyText: Optional[str] = None,
     ) -> str:
 
-        # Stage 3 — LLM answer synthesis
-        answer = await self._llm_svc.invoke_messages(
-            messages=[
-                {
-                    "role": "system",
-                    "content": VCPPromptTemplates.chat_system_prompt(),
-                },
-                {
-                    "role": "user",
-                    "content": VCPPromptTemplates.chat_answer_user_prompt(
-                        ai_context, historyText, questionText, programName, pillar_name
-                    ),
-                },
-            ],
-            label=f"rag_answer|program{programName}",
+        return await self._synthesize_chat_answer(
+            questionText, ai_context, programName, pillar_name, historyText
         )
-
-        return answer
 
     async def send_cross_comparision_question_to_llm(
         self,
@@ -171,24 +166,46 @@ class RAGQueryService:
         historyText: Optional[str] = None,
     ) -> str:
 
-        # Stage 3 — LLM answer synthesis
-        answer = await self._llm_svc.invoke_messages(
-            messages=[
-                {
-                    "role": "system",
-                    "content": VCPPromptTemplates.chat_system_prompt(),
-                },
-                {
-                    "role": "user",
-                    "content": VCPPromptTemplates.chat_answer_user_prompt(
-                        ai_context, historyText, questionText, programName, pillar_name
-                    ),
-                },
-            ],
-            label=f"rag_answer|program{programName}",
+       return await self._synthesize_chat_answer(
+            questionText, ai_context, programName, pillar_name, historyText
         )
 
-        return answer
+    async def _synthesize_chat_answer(
+        self,
+        questionText: str,
+        ai_context: str,
+        programName: str,
+        pillar_name: str,
+        historyText: Optional[str] = None,
+    ) -> str:
+        system_prompt = VCPPromptTemplates.chat_system_prompt()
+        user_prompt = VCPPromptTemplates.chat_answer_user_prompt(
+            ai_context, historyText, questionText, programName, pillar_name
+        )
+
+        if question_needs_web_search(questionText, ai_context) and web_search_available():
+            try:
+                answer, web_sources = await invoke_with_web_search(
+                    system_prompt,
+                    user_prompt,
+                    model=None,
+                )
+                return apply_verified_citations(
+                    answer, merge_verified_sources(web_sources)
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Web Search unavailable; falling back to RAG-only: %s", exc
+                )
+        answer = await self._llm_svc.invoke_messages(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            label=f"rag_answer|program{programName}|pillar{pillar_name}|q={questionText[:40]}",
+        )
+     
+        return apply_verified_citations(answer,[])
     
     # ------------------------------------------------------------------ #
     #  Stage 1 — DB: fetch TOC                                           #
@@ -317,6 +334,9 @@ class RAGQueryService:
                     "section": meta.get("section_path", ""),
                     "file": meta.get("section_title", ""),
                     "relevance": round(1 - dist, 3),
+                    "source_url": meta.get("source_url") or meta.get("sourceUrl") or "",
+                    "source_name": meta.get("source_name") or meta.get("sourceName") or "",
+                    "published_date": meta.get("published_date") or meta.get("source_data_year") or ""
                 }
             )
         return chunks
@@ -617,9 +637,28 @@ class RAGQueryService:
     def _build_context_block(chunks: List[Dict]) -> str:
         if not chunks:
             return ""
-        lines = ["=== FROM UPLOADED Program DOCUMENTS ==="]
+        from app.services.common.url_verifier import is_valid_source_url
+        catalog: List[str] = []
+        lines = ["=== FROM UPLOADED PROGRAM DOCUMENTS ==="]
+        source_idx = 0
         for chunk in chunks:
-            lines.append(f"[{chunk['section']}]\n{chunk['text']}\n")
+            url = str(chunk.get("source_url") or "").strip()
+            prefix = ""
+            if is_valid_source_url(url):
+                source_idx += 1
+                name = chunk.get("source_name") or chunk.get("file") or "RAG"
+                title = chunk.get("file") or chunk.get("section") or ""
+                catalog.append(f"source_{source_idx} | {name} | {title} | {url}")
+                prefix = f"[source_{source_idx}] "
+            lines.append(f"{prefix}[{chunk['sect    ion']}]\n{chunk['text']}\n")
+
+        if catalog:
+            lines.insert(
+                0,
+                "=== VERIFIED RAG SOURCES (copy source_id only; never invent URLs) ===\n"
+                + "\n".join(catalog)
+                + "\n=== END VERIFIED RAG SOURCES ===\n",
+            )
         return "\n".join(lines)
 
     @staticmethod

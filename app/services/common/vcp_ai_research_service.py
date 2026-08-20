@@ -81,7 +81,6 @@ class VCPResearchService:
     ) -> Dict[str, Any]:
         """Score a single question for a given program + pillar."""
         try:
-            year = year or datetime.now().year
             pillars = await db_repository.get_active_pillars_map()
             pillar_context = VCPPPillarPrompts.get_pillar_context(pillarID, pillars)
             system_prompt = VCPPromptTemplates.question_system_prompt(pillar_context)
@@ -92,7 +91,6 @@ class VCPResearchService:
                 user_template=_QUESTION_USER_TMPL,
                 variables={
                     "program_name": program_name,
-                    "year": year,
                     "program_description": program_description,
                     "location": location,
                     "pillar_name": pillar_name,
@@ -121,7 +119,6 @@ class VCPResearchService:
     ) -> Dict[str, Any]:
         """Score an entire pillar for a given program."""
         try:
-            year = year or datetime.now().year
             pillars = await db_repository.get_active_pillars_map()
             pillar_context = VCPPPillarPrompts.get_pillar_context(pillarId, pillars)
             system_prompt = VCPPromptTemplates.pillar_system_prompt(pillar_context)
@@ -132,7 +129,6 @@ class VCPResearchService:
                 user_template=_PILLAR_USER_TMPL,
                 variables={
                     "program_name": program_name,
-                    "year": year,
                     "program_description": {program_description},
                     "location": location,
                     "pillar_name": pillar_name,
@@ -157,7 +153,6 @@ class VCPResearchService:
     ) -> Dict[str, Any]:
         """Produce a cross-pillar program-level Healthassessment."""
         try:
-            year = year or datetime.now().year
             pillars = await db_repository.get_active_pillars_map()
             pillar_names = VCPPPillarPrompts.get_all_pillar_names(pillars)
             pillar_list_str = "\n".join(
@@ -173,7 +168,6 @@ class VCPResearchService:
                 user_template=_PROGRAM_USER_TMPL,
                 variables={
                     "program_name": program_name,
-                    "year": year,
                     "program_description": program_description,
                     "location": location,
                 },
