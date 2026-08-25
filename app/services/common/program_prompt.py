@@ -28,61 +28,47 @@ class VCPPromptTemplates:
         CRITICAL JSON RESPONSE RULES
         ==================================================
 
-        Return ONLY valid JSON.
+        Return ONLY one complete, parseable JSON object.
+        NEVER return {}. NEVER omit a schema key (including temporal_scope).
+        If the output is getting long, SHORTEN string values. Do not drop keys,
+        do not truncate JSON, and do not leave a trailing comma.
 
         MANDATORY:
         - Output must start with {
         - Output must end with }
-        - No markdown
-        - No explanation
-        - No code fences
-        - No comments
-        - No extra text before or after JSON
+        - No markdown, no code fences, no comments, no extra text
+        - Include EVERY key from the OUTPUT schema above — do not skip any
+        - Copy key names exactly. Do not copy <placeholder> angle-bracket text
 
         JSON RULES:
-        1. Use ONLY double quotes (")
-        2. Never use single quotes
-        3. No trailing commas
-        4. All keys must be quoted
-        5. All string values must be quoted
-        6. Escape special characters properly:
-        \\n \\t \\\\ \\\"
-        7. Every object must close with }
-        8. Every array must close with ]
-        9. Never leave objects partially completed
-        10. Never truncate output
-        11. Do not invent additional fields
-        12. Do not omit required fields
-        13. Use valid JSON types only:
-        - string
-        - number
-        - boolean
-        - array
-        - object
-        - null
+        1. Keys and string values use ONLY straight double quotes (")
+        2. Never use single quotes for keys or to wrap values
+        3. No trailing commas (INVALID: { "a": 1, }  VALID: { "a": 1 })
+        4. Comma required between every property (INVALID: { "a": 1 "b": 2 })
+        5. All keys must be quoted
+        6. Inside string values, NEVER use raw double quotes. They break JSON.
+           Use apostrophes for titles/names: 'Montreal Action Plan', not "Montreal Action Plan"
+           If a double quote is unavoidable, escape it as \\"
+        7. Escape special characters: \\n \\t \\\\ \\"
+        8. Close every object with } and every array with ]
+        9. Never truncate. Prefer shorter complete prose over a cut-off object
+        10. Do not invent extra fields. Do not omit required fields
+        11. ASCII only. No smart quotes. No ellipsis (...). No placeholder text
 
-        STRICT OUTPUT REQUIREMENTS:
-        - Keep all content inside the JSON structure
-        - No placeholder text
-        - No ellipsis (...)
-        - No invalid escape sequences
-        - No smart quotes
-        - ASCII characters only
+        STRING VALUE EXAMPLES:
+        INVALID: { "executive_summary": "The "Montreal Action Plan" launched in 2005." }
+        VALID:   { "executive_summary": "The 'Montreal Action Plan' launched in 2005." }
+        INVALID: { "temporal_scope": "Evidence spans 2005-2006", }
+        VALID:   { "temporal_scope": "Evidence spans 2005-2006" }
 
         FINAL VALIDATION BEFORE RESPONSE:
-        - Check commas
-        - Check brackets
-        - Check quote balance
-        - Check object closure
-        - Ensure JSON can be parsed by standard JSON parsers
-        - Validate that the output can be parsed by Python json.loads(). 
-        * If invalid, correct it before responding. 
-        Example of INVALID JSON: { "name": "John", "age": 30, }
-        Example of VALID JSON: { "name": "John", "age": 30 }
-
-        FAIL SAFE:
-        If JSON validity is uncertain, return exactly:
-        {}
+        - Every schema key is present (especially temporal_scope)
+        - Quote balance is even; no raw " inside string values
+        - No trailing commas; a comma sits between properties, not after the last one
+        - Braces and brackets are closed
+        - Output must parse with Python json.loads()
+        If a string would make JSON invalid, rewrite that string (use apostrophes)
+        rather than omitting the field or returning {}.
         """
     # ------------------------------------------------------------------ #
     #  Shared output-style block                                          #
@@ -497,6 +483,10 @@ class VCPPromptTemplates:
                 "source_data_extract": "<The specific data point or finding from this source, 1-2 sentences.>"
             }}
 
+            REQUIRED KEYS: every key in the schema above MUST appear, including
+            temporal_scope, four_layer_evidence, distortion_screening, and
+            stress_simulation. Never return {{}}. Shorten prose rather than drop keys.
+
             {VCPPromptTemplates._OUTPUT_STYLE}
             {VCPPromptTemplates._JSON_RULES}
         """
@@ -617,6 +607,9 @@ class VCPPromptTemplates:
             - Keep output clear for general audiences
             - Never fabricate UNFCCC texts, URLs, or pledge amounts
 
+            REQUIRED KEYS: every key in the schema above MUST appear, including
+            temporal_scope. Never return {{}}. Shorten prose rather than drop keys.
+
             {VCPPromptTemplates._OUTPUT_STYLE}
             {VCPPromptTemplates._JSON_RULES}
         """
@@ -712,6 +705,12 @@ class VCPPromptTemplates:
         SECTION 4 - STRUCTURAL RISKS (~130-170 words):
         Identify the 3-5 most critical systemic risks with cause-effect relationships
         (e.g. ambition without finance; decisions without delivery; inclusion failures).
+
+        REQUIRED KEYS: every key in the schema above MUST appear, including
+        temporal_scope, four_layer_evidence, and executive_summary.
+        Prefer the LOW end of each word range so the JSON can close fully.
+        Inside strings use apostrophes for titles (e.g. 'Montreal Action Plan').
+        Never return {{}}. Never leave a trailing comma.
 
         {VCPPromptTemplates._OUTPUT_STYLE}
         {VCPPromptTemplates._JSON_RULES}

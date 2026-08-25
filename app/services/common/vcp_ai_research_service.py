@@ -131,6 +131,7 @@ class VCPResearchService:
                     "pillar_name": pillar_name,
                 },
                 label=label,
+                max_tokens=8192,
             )
 
             analysis = json.loads(jrp.clean_json_response(raw))
@@ -169,6 +170,7 @@ class VCPResearchService:
                     "location": location,
                 },
                 label=label,
+                max_tokens=8192,
             )
 
             analysis = json.loads(jrp.clean_json_response(raw))

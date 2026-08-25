@@ -45,11 +45,15 @@ def clean_json_response(response: str) -> str:
 
     json_str = response[start : end + 1]
 
-    # Normalise typographic characters
+    # Normalise typographic characters. Curly quotes become straight quotes
+    # so they can be used as JSON delimiters; inner leftover quotes are
+    # escaped in _escape_inner_double_quotes.
     json_str = (
         json_str
         .replace("\u2018", "'")
         .replace("\u2019", "'")
+        .replace("\u201c", '"')
+        .replace("\u201d", '"')
         .replace("\u2013", "-")
         .replace("\u2014", "-")
         .replace("\u2026", "...")
@@ -68,8 +72,8 @@ def clean_json_response(response: str) -> str:
         )
         _log_context(json_str, e.pos)
 
-    # Attempt auto-fix
-    fixed = _fix_json_escaping(json_str)
+    # Attempt auto-fix (inner quotes, trailing commas, escapes)
+    fixed = _repair_json(json_str)
     try:
         json.loads(fixed)
         logger.info("JSON successfully repaired.")
@@ -80,6 +84,104 @@ def clean_json_response(response: str) -> str:
             e2.pos, e2.msg, json_str[:500],
         )
         raise ValueError(f"Could not parse JSON: {e2.msg} at position {e2.pos}")
+
+
+def _repair_json(json_str: str) -> str:
+    """Apply the common LLM JSON repairs in a safe order."""
+    fixed = _escape_inner_double_quotes(json_str)
+    fixed = _fix_json_escaping(fixed)
+    fixed = _strip_trailing_commas(fixed)
+    return fixed
+
+
+def _is_string_terminator(json_str: str, quote_idx: int) -> bool:
+    """True if this quote is ending a JSON string rather than sitting inside it."""
+    j = quote_idx + 1
+    while j < len(json_str) and json_str[j] in " \t\r\n":
+        j += 1
+    if j >= len(json_str):
+        return True
+    # Next token is a structural char, or another quoted key/value (possibly
+    # missing a comma). Alphanumeric text after the quote is an inner quote.
+    return json_str[j] in ',}]:' or json_str[j] == '"'
+
+
+def _escape_inner_double_quotes(json_str: str) -> str:
+    """
+    Escape raw double quotes that appear inside JSON string values
+    (e.g. The "Montreal Action Plan" launched → The \\"Montreal Action Plan\\" launched).
+    """
+    result: list[str] = []
+    i = 0
+    in_string = False
+    n = len(json_str)
+
+    while i < n:
+        char = json_str[i]
+        if in_string:
+            if char == "\\" and i + 1 < n:
+                result.append(char)
+                result.append(json_str[i + 1])
+                i += 2
+                continue
+            if char == '"':
+                if _is_string_terminator(json_str, i):
+                    in_string = False
+                    result.append(char)
+                else:
+                    result.append('\\"')
+                i += 1
+                continue
+            result.append(char)
+            i += 1
+            continue
+
+        if char == '"':
+            in_string = True
+        result.append(char)
+        i += 1
+
+    return "".join(result)
+
+
+def _strip_trailing_commas(json_str: str) -> str:
+    """Remove commas that sit immediately before } or ] (outside of strings)."""
+    result: list[str] = []
+    i = 0
+    in_string = False
+    n = len(json_str)
+
+    while i < n:
+        char = json_str[i]
+        if in_string:
+            result.append(char)
+            if char == "\\" and i + 1 < n:
+                result.append(json_str[i + 1])
+                i += 2
+                continue
+            if char == '"':
+                in_string = False
+            i += 1
+            continue
+
+        if char == '"':
+            in_string = True
+            result.append(char)
+            i += 1
+            continue
+
+        if char == ",":
+            j = i + 1
+            while j < n and json_str[j] in " \t\r\n":
+                j += 1
+            if j < n and json_str[j] in "}]":
+                i += 1
+                continue
+
+        result.append(char)
+        i += 1
+
+    return "".join(result)
 
 
 def _fix_json_escaping(json_str: str) -> str:
@@ -364,10 +466,42 @@ def build_immediateSituation_record(ai: dict) -> Dict[str, Any]:
 #  Internal helpers                                                      #
 # ====================================================================== #
 
+# Narrative fields the LLM sometimes drops. Default rather than fail the run.
+_NARRATIVE_DEFAULT_FIELDS = {
+    "temporal_scope",
+    "distortion_screening",
+    "relational_dependencies",
+    "relational_integrity",
+    "inclusion_equity_adjustment",
+    "opacity_risk",
+    "non_compensation_note",
+    "red_flag",
+    "inclusion_access_note",
+    "institutional_assessment",
+    "data_gap_analysis",
+    "cross_pillar_patterns",
+    "institutional_capacity",
+    "equity_assessment",
+    "governance_trajectory",
+    "strategic_recommendation",
+    "assessment_value_note",
+    "primary_source",
+    "evidence_summary",
+    "executive_summary",
+}
+
+
 def _require_fields(data: Dict, fields: list[str]) -> None:
     for field in fields:
-        if field not in data:
-            raise ValueError(f"Missing required field in LLM response: '{field}'")
+        if field not in data or data.get(field) is None:
+            if field in _NARRATIVE_DEFAULT_FIELDS:
+                logger.warning(
+                    "Missing field '%s' in LLM response; defaulting to empty string.",
+                    field,
+                )
+                data[field] = ""
+            else:
+                raise ValueError(f"Missing required field in LLM response: '{field}'")
 
 
 def _validate_ai_score(data: Dict) -> None:
